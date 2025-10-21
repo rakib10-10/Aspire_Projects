@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="DialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <!-- Background color of the dialog -->
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
+
+        <!-- Text color inside the dialog -->
+        <item name="android:textColorPrimary">#212121</item>
+
+        <!-- Accent color (for buttons etc.) -->
+        <item name="colorAccent">#6200EE</item>
+
+        <!-- Dialog corner radius and elevation -->
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowMinWidthMajor">90%</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+    </style>
+
+
+</resources>
