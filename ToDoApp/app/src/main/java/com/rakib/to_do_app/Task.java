@@ -1,11 +1,15 @@
 package com.rakib.to_do_app;
 
+import java.util.Date;
+
 public class Task {
+    private long id;
     private String title;
     private String description;
     private String date;
     private String startTime;
     private String endTime;
+    private Date dueDate;
     private String category;
     private String status; // "all", "running", "completed"
 
@@ -18,11 +22,19 @@ public class Task {
         this.endTime = endTime;
         this.category = category;
         this.status = status;
+        this.id = System.currentTimeMillis(); // Generate unique ID
     }
 
-    // Constructor with default status
-    public Task(String title, String description, String date, String startTime, String endTime, String category) {
-        this(title, description, date, startTime, endTime, category, "running");
+    // Constructor with ID for existing tasks
+    public Task(long id, String title, String description, String date, String startTime, String endTime, String category, String status) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.date = date;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.category = category;
+        this.status = status;
     }
 
     // Simple constructor
@@ -31,6 +43,7 @@ public class Task {
     }
 
     // Getters
+    public long getId() { return id; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getDate() { return date; }
@@ -39,7 +52,19 @@ public class Task {
     public String getCategory() { return category; }
     public String getStatus() { return status; }
 
+    // Get dueDate - convert from string date to Date object
+    public Date getDueDate() {
+        try {
+            // Convert your "dd-MM-yyyy" string to Date
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd-MM-yyyy", java.util.Locale.getDefault());
+            return sdf.parse(this.date);
+        } catch (Exception e) {
+            return new Date(); // Return current date as fallback
+        }
+    }
+
     // Setters
+    public void setId(long id) { this.id = id; }
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
     public void setDate(String date) { this.date = date; }

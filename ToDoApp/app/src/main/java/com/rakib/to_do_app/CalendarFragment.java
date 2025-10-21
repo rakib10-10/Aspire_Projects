@@ -1,6 +1,9 @@
 package com.rakib.to_do_app;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -95,6 +98,32 @@ public class CalendarFragment extends Fragment {
         recyclerTasks.setAdapter(taskAdapter);
     }
 
+    private void setTaskReminder(Task task) {
+        ReminderManager reminderManager = new ReminderManager(requireContext());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                // Use inexact alarms if we don't have permission
+                reminderManager.setInexactReminder(
+                        task.getId(),
+                        task.getTitle(),
+                        task.getDescription(),
+                        task.getDueDate().getTime()
+                );
+                return;
+            }
+        }
+
+        // We have permission or it's not required (Android < 12)
+        reminderManager.setReminder(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getDueDate().getTime()
+        );
+    }
+
     private void setupDatePicker() {
         Calendar cal = Calendar.getInstance();
         selectedDateStr = sdf.format(cal.getTime());
@@ -148,10 +177,19 @@ public class CalendarFragment extends Fragment {
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status) {
                 Task task = new Task(title, description, date, startTime, endTime, category, status);
-                taskList.add(task);
+
+                // Add to TaskManager (which handles Firestore)
                 TaskManager.getInstance().addTask(task);
+
+                // Set reminder
+                ReminderManager reminderManager = new ReminderManager(requireContext());
+                reminderManager.setReminder(task);
+
+                // Refresh local list
+                taskList = TaskManager.getInstance().getTasks();
                 filterTasksByDate();
-                Toast.makeText(requireContext(), "Task Added: " + title, Toast.LENGTH_SHORT).show();
+
+                Toast.makeText(requireContext(), "Task Added with reminder!", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -161,12 +199,20 @@ public class CalendarFragment extends Fragment {
     private void confirmDelete(Task task) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Task")
-                .setMessage("Are you sure you want to delete this task?")
+                .setMessage("Are you sure you want to delete this task? This will also cancel the reminder.")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    taskList.remove(task);
+                    // Cancel reminder first
+                    ReminderManager reminderManager = new ReminderManager(getContext());
+                    reminderManager.cancelReminder(task);
+
+                    // Remove from TaskManager (which handles Firestore)
                     TaskManager.getInstance().removeTask(task);
+
+                    // Refresh local list
+                    taskList = TaskManager.getInstance().getTasks();
                     filterTasksByDate();
-                    Toast.makeText(getContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+
+                    Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("No", null)
                 .show();
@@ -188,6 +234,11 @@ public class CalendarFragment extends Fragment {
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status) {
+                // Cancel old reminder
+                ReminderManager reminderManager = new ReminderManager(requireContext());
+                reminderManager.cancelReminder(task);
+
+                // Update task
                 task.setTitle(title);
                 task.setDescription(description);
                 task.setDate(date);
@@ -195,9 +246,18 @@ public class CalendarFragment extends Fragment {
                 task.setEndTime(endTime);
                 task.setCategory(category);
                 task.setStatus(status);
+
+                // Update in TaskManager (which handles Firestore)
                 TaskManager.getInstance().updateTask(task);
+
+                // Set new reminder
+                reminderManager.setReminder(task);
+
+                // Refresh local list
+                taskList = TaskManager.getInstance().getTasks();
                 filterTasksByDate();
-                Toast.makeText(requireContext(), "Task updated!", Toast.LENGTH_SHORT).show();
+
+                Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();
             }
         });
 

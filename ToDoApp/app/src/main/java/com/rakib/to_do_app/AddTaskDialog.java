@@ -1,9 +1,12 @@
 package com.rakib.to_do_app;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
+import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -240,6 +243,24 @@ public class AddTaskDialog extends DialogFragment {
             } else {
                 if (listener != null) {
                     listener.onTaskCreated(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+
+                    // Create task and set reminder
+                    Task task = new Task(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+                    ReminderManager reminderManager = new ReminderManager(requireContext());
+
+                    // Use the proper permission-aware method
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
+                        if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                            reminderManager.setInexactReminder(task);
+                        } else {
+                            reminderManager.setReminder(task);
+                        }
+                    } else {
+                        reminderManager.setReminder(task);
+                    }
+
+                    Toast.makeText(getContext(), "Task created with reminder!", Toast.LENGTH_SHORT).show();
                 }
                 dismiss();
             }

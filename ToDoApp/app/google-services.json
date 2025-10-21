@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "347385379937",
+    "project_id": "to-do-app-bae9b",
+    "storage_bucket": "to-do-app-bae9b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:347385379937:android:dddd5f3a3644eefb80fe20",
+        "android_client_info": {
+          "package_name": "com.rakib.to_do_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDM8HTgsXVeYjzs34g634l9wXDRl-NS16I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

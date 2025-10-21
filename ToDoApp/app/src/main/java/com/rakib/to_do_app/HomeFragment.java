@@ -54,8 +54,7 @@ public class HomeFragment extends Fragment {
             public void onTaskEdit(int position) {
                 Task task = taskAdapter.getTaskAt(position);
                 if (task != null) {
-                    // You can implement edit functionality here if needed
-                    Toast.makeText(getContext(), "Edit task: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+                    openEditTaskDialog(task);
                 }
             }
 
@@ -63,10 +62,15 @@ public class HomeFragment extends Fragment {
             public void onTaskDelete(int position) {
                 Task task = taskAdapter.getTaskAt(position);
                 if (task != null) {
-                    allTasks.remove(task);
+                    // Cancel reminder first
+                    ReminderManager reminderManager = new ReminderManager(requireContext());
+                    reminderManager.cancelReminder(task);
+
+                    // Then remove from TaskManager (which handles Firestore)
                     TaskManager.getInstance().removeTask(task);
+                    allTasks.remove(task);
                     filterTasksByStatus(currentTab);
-                    Toast.makeText(getContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -156,6 +160,51 @@ public class HomeFragment extends Fragment {
             recyclerTasks.setVisibility(View.VISIBLE);
             txtEmptyState.setVisibility(View.GONE);
         }
+    }
+
+    private void openEditTaskDialog(Task task) {
+        AddTaskDialog dialog = new AddTaskDialog();
+
+        Bundle args = new Bundle();
+        args.putString("title", task.getTitle());
+        args.putString("description", task.getDescription());
+        args.putString("date", task.getDate());
+        args.putString("startTime", task.getStartTime());
+        args.putString("endTime", task.getEndTime());
+        args.putString("category", task.getCategory());
+        args.putString("status", task.getStatus());
+        dialog.setArguments(args);
+
+        dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
+            @Override
+            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status) {
+                // Cancel old reminder
+                ReminderManager reminderManager = new ReminderManager(requireContext());
+                reminderManager.cancelReminder(task);
+
+                // Update task
+                task.setTitle(title);
+                task.setDescription(description);
+                task.setDate(date);
+                task.setStartTime(startTime);
+                task.setEndTime(endTime);
+                task.setCategory(category);
+                task.setStatus(status);
+
+                // Update in TaskManager (which handles Firestore)
+                TaskManager.getInstance().updateTask(task);
+
+                // Set new reminder
+                reminderManager.setReminder(task);
+
+                // Refresh the task list
+                filterTasksByStatus(currentTab);
+
+                Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.show(getParentFragmentManager(), "EditTaskDialog");
     }
 
     @Override
