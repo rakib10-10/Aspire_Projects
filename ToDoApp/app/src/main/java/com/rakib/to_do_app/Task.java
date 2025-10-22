@@ -9,12 +9,19 @@ public class Task {
     private String date;
     private String startTime;
     private String endTime;
-    private Date dueDate;
     private String category;
     private String status; // "all", "running", "completed"
 
+    // 🔥 FIX: ADD NO-ARGUMENT CONSTRUCTOR (REQUIRED BY FIREBASE)
+    public Task() {
+        // Default constructor required for Firestore deserialization
+        this.id = System.currentTimeMillis();
+        this.status = "running";
+    }
+
     // Primary constructor with all fields
     public Task(String title, String description, String date, String startTime, String endTime, String category, String status) {
+        this.id = System.currentTimeMillis();
         this.title = title;
         this.description = description;
         this.date = date;
@@ -22,7 +29,6 @@ public class Task {
         this.endTime = endTime;
         this.category = category;
         this.status = status;
-        this.id = System.currentTimeMillis(); // Generate unique ID
     }
 
     // Constructor with ID for existing tasks
@@ -39,10 +45,12 @@ public class Task {
 
     // Simple constructor
     public Task(String title, String date) {
-        this(title, "", date, "", "", "", "running");
+        this();
+        this.title = title;
+        this.date = date;
     }
 
-    // Getters
+    // Getters and Setters (MAKE SURE ALL FIELDS HAVE GETTERS/SETTERS)
     public long getId() { return id; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
@@ -72,4 +80,15 @@ public class Task {
     public void setEndTime(String endTime) { this.endTime = endTime; }
     public void setCategory(String category) { this.category = category; }
     public void setStatus(String status) { this.status = status; }
+
+    // Optional: toString method for debugging
+    @Override
+    public String toString() {
+        return "Task{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", date='" + date + '\'' +
+                ", status='" + status + '\'' +
+                '}';
+    }
 }
