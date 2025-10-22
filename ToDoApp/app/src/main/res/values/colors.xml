@@ -10,8 +10,105 @@
     <color name="gray_light">#F5F5F5</color>
     <color name="gray">#9E9E9E</color>
     <color name="gray_dark">#424242</color>
+    <color name="transparent">#00000000</color>
 
     <color name="green">#4CAF50</color>
     <color name="orange">#FF9800</color>
     <color name="red">#F44336</color>
+    <!-- Primary Colors -->
+
+    <color name="primary_light">#C7D2FE</color>
+    <color name="primary_surface">#EEF2FF</color>
+
+    <!-- Secondary Colors -->
+    <color name="secondary_color">#EC4899</color>
+    <color name="secondary_light">#FBCFE8</color>
+
+    <!-- Semantic Colors -->
+    <color name="success_green">#10B981</color>
+    <color name="warning_orange">#F59E0B</color>
+    <color name="error_red">#EF4444</color>
+    <color name="info_blue">#3B82F6</color>
+
+    <!-- Neutral Colors -->
+
+    <color name="gray_50">#F9FAFB</color>
+    <color name="gray_100">#F3F4F6</color>
+    <color name="gray_200">#E5E7EB</color>
+    <color name="gray_300">#D1D5DB</color>
+    <color name="gray_400">#9CA3AF</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_600">#4B5563</color>
+    <color name="gray_700">#374151</color>
+    <color name="gray_800">#1F2937</color>
+    <color name="gray_900">#111827</color>
+
+    <!-- Background Colors -->
+    <color name="background_gray">#F8FAFC</color>
+    <color name="surface_white">#FFFFFF</color>
+    <color name="surface_gray">#F9FAFB</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#1F2937</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_tertiary">#9CA3AF</color>
+    <color name="text_disabled">#D1D5DB</color>
+    <color name="text_inverse">#FFFFFF</color>
+
+    <!-- State Colors -->
+    <color name="hover_state">#0000000A</color>
+    <color name="focus_state">#6366F11A</color>
+    <color name="pressed_state">#0000000F</color>
+    <color name="selected_state">#6366F10D</color>
+
+    <!-- Border Colors -->
+    <color name="border_light">#E5E7EB</color>
+    <color name="border_medium">#D1D5DB</color>
+    <color name="border_dark">#9CA3AF</color>
+
+    <!-- Status Colors -->
+    <color name="status_in_progress">#F59E0B</color>
+    <color name="status_completed">#10B981</color>
+    <color name="status_pending">#6B7280</color>
+    <color name="status_cancelled">#EF4444</color>
+
+    <!-- Category Colors -->
+    <color name="category_design">#8B5CF6</color>
+    <color name="category_meeting">#3B82F6</color>
+    <color name="category_coding">#10B981</color>
+    <color name="category_learning">#F59E0B</color>
+    <color name="category_testing">#EC4899</color>
+    <color name="category_quick_call">#6366F1</color>
+
+    <!-- Chip & Badge Backgrounds -->
+    <color name="category_chip_bg">#EEF2FF</color>
+    <color name="category_chip_stroke">#C7D2FE</color>
+    <color name="badge_success_bg">#10B981</color>
+    <color name="badge_warning_bg">#F59E0B</color>
+    <color name="badge_error_bg">#EF4444</color>
+    <color name="badge_info_bg">#3B82F6</color>
+    <color name="badge_neutral_bg">#6B7280</color>
+
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#6366F1</color>
+    <color name="gradient_mid">#8B5CF6</color>
+    <color name="gradient_end">#EC4899</color>
+
+    <!-- Overlay Colors -->
+    <color name="overlay_dark">#CC1F2937</color>
+    <color name="overlay_light">#33FFFFFF</color>
+
+    <!-- Shadow Colors -->
+    <color name="shadow_light">#0D000000</color>
+    <color name="shadow_medium">#1A000000</color>
+    <color name="shadow_dark">#33000000</color>
+
+    <!-- Legacy colors (for backward compatibility) -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+
+
 </resources>

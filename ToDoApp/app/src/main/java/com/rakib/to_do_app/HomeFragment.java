@@ -116,12 +116,12 @@ public class HomeFragment extends Fragment {
         btnInProgress.setBackgroundResource(R.drawable.btn_unselected);
         btnCompleted.setBackgroundResource(R.drawable.btn_unselected);
 
-        btnMyTasks.setTextColor(getResources().getColor(android.R.color.darker_gray));
-        btnInProgress.setTextColor(getResources().getColor(android.R.color.darker_gray));
-        btnCompleted.setTextColor(getResources().getColor(android.R.color.darker_gray));
+        btnMyTasks.setTextColor(getResources().getColor(android.R.color.black));
+        btnInProgress.setTextColor(getResources().getColor(android.R.color.black));
+        btnCompleted.setTextColor(getResources().getColor(android.R.color.black));
 
         selectedButton.setBackgroundResource(R.drawable.btn_selected);
-        selectedButton.setTextColor(getResources().getColor(android.R.color.white));
+        selectedButton.setTextColor(getResources().getColor(android.R.color.black));
     }
 
     private void loadTasks() {
