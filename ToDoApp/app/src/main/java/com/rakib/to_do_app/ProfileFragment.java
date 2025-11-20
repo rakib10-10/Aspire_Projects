@@ -20,11 +20,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import de.hdodenhof.circleimageview.CircleImageView;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -36,12 +31,12 @@ public class ProfileFragment extends Fragment {
     private Button btnSaveProfile, btnCancel, btnChangePassword, btnPrivacySettings, btnLogout;
     private ImageButton btnEditPhoto;
 
-    private DatabaseReference mDatabase;
-    private String userId = "default_user";
+    private DatabaseHelper dbHelper;
+    private String userId = "local_user";
 
     private static final String TAG = "ProfileFragment";
     private static final int PICK_IMAGE_REQUEST = 1001;
-    private static final int MAX_IMAGE_SIZE = 500; // KB
+    private static final int MAX_IMAGE_SIZE = 500;
 
     private Uri selectedImageUri;
     private String currentBase64Image;
@@ -53,8 +48,8 @@ public class ProfileFragment extends Fragment {
 
         Log.d(TAG, "onCreateView: Fragment created");
 
-        // Initialize Firebase
-        mDatabase = FirebaseDatabase.getInstance().getReference();
+        // Initialize SQLite Database
+        dbHelper = new DatabaseHelper(requireContext());
 
         // Initialize views
         initializeViews(view);
@@ -85,27 +80,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadUserData() {
-        Log.d(TAG, "loadUserData: Attempting to load data for user: " + userId);
+        Log.d(TAG, "loadUserData: Loading user data from SQLite");
 
-        mDatabase.child("users").child(userId).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    UserProfile userProfile = dataSnapshot.getValue(UserProfile.class);
-                    if (userProfile != null) {
-                        updateUI(userProfile);
-                    }
-                } else {
-                    createDefaultProfile();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.e(TAG, "onCancelled: " + databaseError.getMessage());
-                Toast.makeText(getActivity(), "Failed to load profile", Toast.LENGTH_SHORT).show();
-            }
-        });
+        UserProfile userProfile = dbHelper.getUserProfile();
+        if (userProfile != null) {
+            updateUI(userProfile);
+        }
     }
 
     private void updateUI(UserProfile userProfile) {
@@ -123,24 +103,6 @@ public class ProfileFragment extends Fragment {
             profileImage.setImageResource(R.drawable.outline_account_circle_24);
             Log.d(TAG, "No profile image, using placeholder");
         }
-    }
-
-    private void createDefaultProfile() {
-        UserProfile defaultProfile = new UserProfile(
-                userId,
-                "Rakib Bhuiyan",
-                "mdtara0199@gmail.com",
-                "+1 234 567 8900",
-                "Passionate about productivity and task management. Love creating efficient workflows!",
-                "" // Empty Base64 image
-        );
-        mDatabase.child("users").child(userId).setValue(defaultProfile)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Default profile created successfully");
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to create default profile: " + e.getMessage());
-                });
     }
 
     private void setupClickListeners() {
@@ -163,7 +125,7 @@ public class ProfileFragment extends Fragment {
         btnCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                loadUserData(); // Reload original data
+                loadUserData();
             }
         });
 
@@ -275,12 +237,12 @@ public class ProfileFragment extends Fragment {
                     // Update on UI thread
                     getActivity().runOnUiThread(() -> {
                         currentBase64Image = base64Image;
-                        saveBase64ImageToFirebase(base64Image);
+                        saveBase64ImageToDatabase(base64Image);
                         Log.d(TAG, "Image converted to Base64");
                         Toast.makeText(getActivity(), "Profile picture saved!", Toast.LENGTH_SHORT).show();
                     });
 
-                    bitmap.recycle(); // Free memory
+                    bitmap.recycle();
                 }
 
             } catch (Exception e) {
@@ -292,16 +254,14 @@ public class ProfileFragment extends Fragment {
         }).start();
     }
 
-    private void saveBase64ImageToFirebase(String base64Image) {
-        mDatabase.child("users").child(userId).child("profileImageBase64")
-                .setValue(base64Image)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Base64 image saved to Firebase");
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to save Base64 image: " + e.getMessage());
-                    Toast.makeText(getActivity(), "Failed to save image", Toast.LENGTH_SHORT).show();
-                });
+    private void saveBase64ImageToDatabase(String base64Image) {
+        // Get current profile and update image
+        UserProfile currentProfile = dbHelper.getUserProfile();
+        if (currentProfile != null) {
+            currentProfile.setProfileImageBase64(base64Image);
+            dbHelper.saveUserProfile(currentProfile);
+            Log.d(TAG, "Profile image saved to database");
+        }
     }
 
     private void loadBase64Image(String base64Image) {
@@ -332,25 +292,20 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        // Use current Base64 image (if any was selected)
-        String imageBase64 = currentBase64Image != null ? currentBase64Image : "";
-
         UserProfile updatedProfile = new UserProfile(
                 userId,
                 name,
                 email,
                 phone,
                 bio,
-                imageBase64
+                currentBase64Image != null ? currentBase64Image : ""
         );
 
-        mDatabase.child("users").child(userId).setValue(updatedProfile)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        Toast.makeText(getActivity(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getActivity(), "Failed to update profile", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        long result = dbHelper.saveUserProfile(updatedProfile);
+        if (result > 0) {
+            Toast.makeText(getActivity(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(getActivity(), "Failed to update profile", Toast.LENGTH_SHORT).show();
+        }
     }
 }

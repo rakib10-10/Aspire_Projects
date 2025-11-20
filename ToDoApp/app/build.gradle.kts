@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("com.google.gms.google-services")
+    // Remove Google services plugin since we're not using Firebase
+    // id("com.google.gms.google-services")
 }
 
 android {
@@ -56,17 +57,6 @@ dependencies {
     implementation(libs.androidx.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-
-    // Firebase Bill of Materials (BOM) - USE ONLY ONE BOM VERSION
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-
-    // Firebase dependencies (they will use versions from the BOM)
-    implementation("com.google.firebase:firebase-database")        // For profile data (Realtime Database)
-    implementation("com.google.firebase:firebase-firestore")       // For tasks and reminders (Firestore)
-    implementation("com.google.firebase:firebase-auth")            // For authentication
-    implementation("com.google.firebase:firebase-analytics")       // For analytics
-            // For profile pictures storage
-
     // AndroidX
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.work:work-runtime:2.9.0")
@@ -74,7 +64,7 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
-    implementation("androidx.exifinterface:exifinterface:1.3.6")   // For image processing
+    implementation("androidx.exifinterface:exifinterface:1.3.6")
 
     // UI Libraries
     implementation("de.hdodenhof:circleimageview:3.1.0")
@@ -84,13 +74,10 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
-    // Image Picker (easy to use library)
-
-
-    // Image Compression
+    // Image Compression (optional - for profile pictures)
     implementation("id.zelory:compressor:3.0.1")
 
-    // Permissions handling
+    // Permissions handling (optional - for image picking)
     implementation("com.karumi:dexter:6.2.3")
 
     // Testing

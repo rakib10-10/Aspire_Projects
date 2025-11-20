@@ -247,7 +247,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         if (cursor.moveToFirst()) {
             profile = new UserProfile();
-            profile.setUserId("local_user"); // Since we're using local storage
+            profile.setUserId("local_user");
             profile.setName(cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_NAME)));
             profile.setEmail(cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_EMAIL)));
             profile.setPhone(cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_PHONE)));
@@ -335,5 +335,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new String[]{String.valueOf(taskId)});
         db.close();
         Log.d(TAG, "Reminder deleted for task ID: " + taskId);
+    }
+
+    public List<Reminder> getAllReminders() {
+        List<Reminder> reminders = new ArrayList<>();
+        String selectQuery = "SELECT * FROM " + TABLE_REMINDERS;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                Reminder reminder = new Reminder();
+                reminder.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)));
+                reminder.setTaskId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_REMINDER_TASK_ID)));
+                reminder.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_REMINDER_TITLE)));
+                reminder.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(KEY_REMINDER_DESCRIPTION)));
+                reminder.setReminderTime(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_REMINDER_TIME)));
+
+                reminders.add(reminder);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+        return reminders;
     }
 }

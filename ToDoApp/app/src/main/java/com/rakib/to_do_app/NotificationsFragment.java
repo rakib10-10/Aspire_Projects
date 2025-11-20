@@ -15,11 +15,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,22 +33,16 @@ public class NotificationsFragment extends Fragment {
     private NotificationAdapter notificationAdapter;
     private List<NotificationItem> notificationList;
 
-    // Firebase
-    private DatabaseReference mDatabase;
-    private String userId = "default_user";
-
-    public NotificationsFragment() {
-        // Required empty public constructor
-    }
+    // Database
+    private DatabaseHelper dbHelper;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.activity_notifications, container, false);
 
-        // Initialize Firebase
-        mDatabase = FirebaseDatabase.getInstance().getReference();
+        // Initialize Database
+        dbHelper = new DatabaseHelper(requireContext());
 
         // Initialize views
         initializeViews(view);
@@ -77,9 +66,6 @@ public class NotificationsFragment extends Fragment {
     private void initializeViews(View view) {
         // Initialize toolbar
         toolbar = view.findViewById(R.id.toolbar);
-
-        // Remove the back button functionality since it's a fragment
-        // You can keep the toolbar for consistency with your design
 
         // Initialize switches
         switchTaskReminders = view.findViewById(R.id.switch_task_reminders);
@@ -138,11 +124,18 @@ public class NotificationsFragment extends Fragment {
                 String selectedSound = parent.getItemAtPosition(position).toString();
                 saveNotificationSetting("notificationSound", selectedSound);
                 Log.d(TAG, "Notification sound selected: " + selectedSound);
+
+                // Test the selected sound
+                testNotificationSound(selectedSound);
             }
 
             @Override
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
+    }
+
+    private void testNotificationSound(String soundName) {
+        NotificationHelper.playTestSound(requireContext(), soundName);
     }
 
     private void setupSwitches() {
@@ -181,96 +174,20 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void loadNotificationSettings() {
-        mDatabase.child("users").child(userId).child("notificationSettings")
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        if (dataSnapshot.exists()) {
-                            // Load task reminders setting
-                            if (dataSnapshot.child("taskRemindersEnabled").exists()) {
-                                Boolean taskReminders = dataSnapshot.child("taskRemindersEnabled").getValue(Boolean.class);
-                                if (taskReminders != null) {
-                                    switchTaskReminders.setChecked(taskReminders);
-                                }
-                            }
+        NotificationSettings settings = dbHelper.getNotificationSettings();
 
-                            // Load due date alerts setting
-                            if (dataSnapshot.child("dueDateAlertsEnabled").exists()) {
-                                Boolean dueDateAlerts = dataSnapshot.child("dueDateAlertsEnabled").getValue(Boolean.class);
-                                if (dueDateAlerts != null) {
-                                    switchDueDateAlerts.setChecked(dueDateAlerts);
-                                }
-                            }
+        // Update UI with settings
+        switchTaskReminders.setChecked(settings.isTaskRemindersEnabled());
+        switchDueDateAlerts.setChecked(settings.isDueDateAlertsEnabled());
+        switchDailySummary.setChecked(settings.isDailySummaryEnabled());
+        setSpinnerSelection(spinnerReminderTime, settings.getDefaultReminderTime());
+        setSpinnerSelection(spinnerNotificationSound, settings.getNotificationSound());
 
-                            // Load daily summary setting
-                            if (dataSnapshot.child("dailySummaryEnabled").exists()) {
-                                Boolean dailySummary = dataSnapshot.child("dailySummaryEnabled").getValue(Boolean.class);
-                                if (dailySummary != null) {
-                                    switchDailySummary.setChecked(dailySummary);
-                                }
-                            }
-
-                            // Load reminder time setting
-                            if (dataSnapshot.child("defaultReminderTime").exists()) {
-                                String reminderTime = dataSnapshot.child("defaultReminderTime").getValue(String.class);
-                                if (reminderTime != null) {
-                                    setSpinnerSelection(spinnerReminderTime, reminderTime);
-                                }
-                            }
-
-                            // Load notification sound setting
-                            if (dataSnapshot.child("notificationSound").exists()) {
-                                String notificationSound = dataSnapshot.child("notificationSound").getValue(String.class);
-                                if (notificationSound != null) {
-                                    setSpinnerSelection(spinnerNotificationSound, notificationSound);
-                                }
-                            }
-
-                            Log.d(TAG, "Notification settings loaded successfully");
-                        } else {
-                            // Create default settings if they don't exist
-                            createDefaultNotificationSettings();
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-                        Log.e(TAG, "Failed to load notification settings: " + databaseError.getMessage());
-                    }
-                });
-    }
-
-    private void createDefaultNotificationSettings() {
-        NotificationSettings defaultSettings = new NotificationSettings(
-                true,  // taskRemindersEnabled
-                true,  // dueDateAlertsEnabled
-                false, // dailySummaryEnabled
-                "15 minutes before", // defaultReminderTime
-                "Default" // notificationSound
-        );
-
-        mDatabase.child("users").child(userId).child("notificationSettings")
-                .setValue(defaultSettings)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Default notification settings created");
-                    // Set UI to default values
-                    if (isAdded()) { // Check if fragment is attached to activity
-                        requireActivity().runOnUiThread(() -> {
-                            switchTaskReminders.setChecked(true);
-                            switchDueDateAlerts.setChecked(true);
-                            switchDailySummary.setChecked(false);
-                            setSpinnerSelection(spinnerReminderTime, "15 minutes before");
-                            setSpinnerSelection(spinnerNotificationSound, "Default");
-                        });
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to create default notification settings: " + e.getMessage());
-                });
+        Log.d(TAG, "Notification settings loaded successfully");
     }
 
     private void setSpinnerSelection(Spinner spinner, String value) {
-        if (spinner.getAdapter() != null) {
+        if (spinner.getAdapter() != null && value != null) {
             ArrayAdapter adapter = (ArrayAdapter) spinner.getAdapter();
             for (int i = 0; i < adapter.getCount(); i++) {
                 if (adapter.getItem(i).toString().equalsIgnoreCase(value)) {
@@ -282,45 +199,13 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void saveNotificationSetting(String key, Object value) {
-        mDatabase.child("users").child(userId).child("notificationSettings").child(key)
-                .setValue(value)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Notification setting saved: " + key + " = " + value);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to save notification setting: " + e.getMessage());
-                });
+        dbHelper.updateNotificationSetting(key, value);
+        Log.d(TAG, "Notification setting saved to SQLite: " + key + " = " + value);
     }
 
     private void loadNotifications() {
         // For now, we'll create some sample notifications
-        // In a real app, you would load these from Firebase
         createSampleNotifications();
-
-        // Uncomment below to load from Firebase when you have the structure ready
-        /*
-        mDatabase.child("users").child(userId).child("notifications")
-                .orderByChild("timestamp")
-                .limitToLast(20)
-                .addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        notificationList.clear();
-                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                            NotificationItem notification = snapshot.getValue(NotificationItem.class);
-                            if (notification != null) {
-                                notificationList.add(0, notification); // Add to beginning for reverse chronological order
-                            }
-                        }
-                        updateNotificationUI();
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-                        Log.e(TAG, "Failed to load notifications: " + databaseError.getMessage());
-                    }
-                });
-        */
     }
 
     private void createSampleNotifications() {
@@ -352,7 +237,7 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void updateNotificationUI() {
-        if (isAdded()) { // Check if fragment is attached to activity
+        if (isAdded()) {
             requireActivity().runOnUiThread(() -> {
                 if (notificationList.isEmpty()) {
                     recyclerViewNotifications.setVisibility(View.GONE);

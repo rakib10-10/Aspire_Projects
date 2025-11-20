@@ -10,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +21,7 @@ public class HomeFragment extends Fragment {
     private TaskAdapter taskAdapter;
     private List<Task> allTasks = new ArrayList<>();
     private String currentTab = "all";
+    private TaskManager taskManager;
 
     public HomeFragment() {
         // Required empty public constructor
@@ -31,6 +31,9 @@ public class HomeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
+
+        // Initialize TaskManager with SQLite
+        taskManager = TaskManager.getInstance(requireContext());
 
         initializeViews(view);
         setupTaskAdapter();
@@ -66,8 +69,8 @@ public class HomeFragment extends Fragment {
                     ReminderManager reminderManager = new ReminderManager(requireContext());
                     reminderManager.cancelReminder(task);
 
-                    // Then remove from TaskManager (which handles Firestore)
-                    TaskManager.getInstance().removeTask(task);
+                    // Then remove from TaskManager (SQLite)
+                    taskManager.removeTask(task);
                     allTasks.remove(task);
                     filterTasksByStatus(currentTab);
                     Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
@@ -79,7 +82,7 @@ public class HomeFragment extends Fragment {
                 Task task = taskAdapter.getTaskAt(position);
                 if (task != null) {
                     task.setStatus(newStatus);
-                    TaskManager.getInstance().updateTask(task);
+                    taskManager.updateTask(task);
                     filterTasksByStatus(currentTab);
                     String statusText = newStatus.equals("running") ? "In Progress" : "Completed";
                     Toast.makeText(getContext(), "Task marked as " + statusText, Toast.LENGTH_SHORT).show();
@@ -125,7 +128,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadTasks() {
-        allTasks = TaskManager.getInstance().getTasks();
+        allTasks = taskManager.getTasks();
         filterTasksByStatus(currentTab);
     }
 
@@ -166,6 +169,7 @@ public class HomeFragment extends Fragment {
         AddTaskDialog dialog = new AddTaskDialog();
 
         Bundle args = new Bundle();
+        args.putLong("task_id", task.getId());
         args.putString("title", task.getTitle());
         args.putString("description", task.getDescription());
         args.putString("date", task.getDate());
@@ -191,8 +195,8 @@ public class HomeFragment extends Fragment {
                 task.setCategory(category);
                 task.setStatus(status);
 
-                // Update in TaskManager (which handles Firestore)
-                TaskManager.getInstance().updateTask(task);
+                // Update in TaskManager (SQLite)
+                taskManager.updateTask(task);
 
                 // Set new reminder
                 reminderManager.setReminder(task);

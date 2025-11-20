@@ -1,132 +1,125 @@
 package com.rakib.to_do_app;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import android.content.Context;
+import android.util.Log;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class TaskManager {
     private static TaskManager instance;
-    private List<Task> tasks = new ArrayList<>();
-    private FirebaseFirestore db;
+    private DatabaseHelper dbHelper;
+    private List<Task> tasks;
 
-    private TaskManager() {
-        db = FirebaseFirestore.getInstance();
-        loadTasksFromFirestore();
+    // Private constructor with Context for database operations
+    private TaskManager(Context context) {
+        this.dbHelper = new DatabaseHelper(context.getApplicationContext());
+        this.tasks = new ArrayList<>();
+        loadTasksFromDatabase();
     }
 
-    public static TaskManager getInstance() {
+    // Public static method to get instance with Context
+    public static synchronized TaskManager getInstance(Context context) {
         if (instance == null) {
-            instance = new TaskManager();
+            instance = new TaskManager(context);
         }
         return instance;
     }
 
-    public void addTask(Task task) {
-        tasks.add(task);
-        saveTaskToFirestore(task);
+    // Alternative getInstance without parameters (use only after initialization)
+    public static TaskManager getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("TaskManager must be initialized first with getInstance(Context)");
+        }
+        return instance;
     }
 
     public List<Task> getTasks() {
-        return new ArrayList<>(tasks);
+        if (tasks == null) {
+            tasks = new ArrayList<>();
+        }
+        return tasks;
     }
 
-    public void removeTask(Task task) {
-        tasks.remove(task);
-        deleteTaskFromFirestore(task);
-    }
+    public void addTask(Task task) {
+        if (dbHelper != null) {
+            long taskId = dbHelper.addTask(task);
+            task.setId(taskId);
 
-    public void updateTask(Task updatedTask) {
-        for (int i = 0; i < tasks.size(); i++) {
-            Task task = tasks.get(i);
-            if (task.getTitle().equals(updatedTask.getTitle()) &&
-                    task.getDate().equals(updatedTask.getDate())) {
-                tasks.set(i, updatedTask);
-                updateTaskInFirestore(updatedTask);
-                break;
+            if (tasks == null) {
+                tasks = new ArrayList<>();
             }
+            tasks.add(0, task); // Add to beginning for newest first
+            Log.d("TaskManager", "Task added: " + task.getTitle());
+        } else {
+            Log.e("TaskManager", "DatabaseHelper is null - cannot add task");
         }
     }
 
-    private void loadTasksFromFirestore() {
-        db.collection("tasks")
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        tasks.clear();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            Task firestoreTask = document.toObject(Task.class);
-                            tasks.add(firestoreTask);
-                        }
-                    }
-                });
+    public void removeTask(Task task) {
+        if (dbHelper != null && tasks != null) {
+            dbHelper.deleteTask(task.getId());
+            tasks.remove(task);
+            Log.d("TaskManager", "Task removed: " + task.getTitle());
+        } else {
+            Log.e("TaskManager", "DatabaseHelper or tasks list is null - cannot remove task");
+        }
     }
 
-    private void saveTaskToFirestore(Task task) {
-        Map<String, Object> taskData = new HashMap<>();
-        taskData.put("title", task.getTitle());
-        taskData.put("description", task.getDescription());
-        taskData.put("date", task.getDate());
-        taskData.put("startTime", task.getStartTime());
-        taskData.put("endTime", task.getEndTime());
-        taskData.put("category", task.getCategory());
-        taskData.put("status", task.getStatus());
+    public void updateTask(Task updatedTask) {
+        if (dbHelper != null && tasks != null) {
+            dbHelper.updateTask(updatedTask);
 
-        // Use a unique ID for the document
-        String taskId = generateTaskId(task);
-
-        db.collection("tasks")
-                .document(taskId)
-                .set(taskData)
-                .addOnSuccessListener(aVoid -> {
-                    // Task saved successfully
-                })
-                .addOnFailureListener(e -> {
-                    // Handle error
-                });
+            // Update in local list
+            for (int i = 0; i < tasks.size(); i++) {
+                Task task = tasks.get(i);
+                if (task.getId() == updatedTask.getId()) {
+                    tasks.set(i, updatedTask);
+                    break;
+                }
+            }
+            Log.d("TaskManager", "Task updated: " + updatedTask.getTitle());
+        } else {
+            Log.e("TaskManager", "DatabaseHelper or tasks list is null - cannot update task");
+        }
     }
 
-    private void updateTaskInFirestore(Task task) {
-        Map<String, Object> taskData = new HashMap<>();
-        taskData.put("title", task.getTitle());
-        taskData.put("description", task.getDescription());
-        taskData.put("date", task.getDate());
-        taskData.put("startTime", task.getStartTime());
-        taskData.put("endTime", task.getEndTime());
-        taskData.put("category", task.getCategory());
-        taskData.put("status", task.getStatus());
+    private void loadTasksFromDatabase() {
+        if (tasks == null) {
+            tasks = new ArrayList<>();
+        }
 
-        String taskId = generateTaskId(task);
-
-        db.collection("tasks")
-                .document(taskId)
-                .set(taskData)
-                .addOnSuccessListener(aVoid -> {
-                    // Task updated successfully
-                })
-                .addOnFailureListener(e -> {
-                    // Handle error
-                });
+        if (dbHelper != null) {
+            tasks.clear();
+            List<Task> databaseTasks = dbHelper.getAllTasks();
+            if (databaseTasks != null) {
+                tasks.addAll(databaseTasks);
+            }
+            Log.d("TaskManager", "Tasks loaded from database: " + tasks.size());
+        } else {
+            Log.e("TaskManager", "DatabaseHelper is null - cannot load tasks");
+        }
     }
 
-    private void deleteTaskFromFirestore(Task task) {
-        String taskId = generateTaskId(task);
-
-        db.collection("tasks")
-                .document(taskId)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
-                    // Task deleted successfully
-                })
-                .addOnFailureListener(e -> {
-                    // Handle error
-                });
+    public void refreshTasks() {
+        loadTasksFromDatabase();
     }
 
-    private String generateTaskId(Task task) {
-        // Create a unique ID using title and date
-        return task.getTitle() + "_" + task.getDate().replace("-", "");
+    public Task getTaskById(long taskId) {
+        if (tasks != null) {
+            for (Task task : tasks) {
+                if (task.getId() == taskId) {
+                    return task;
+                }
+            }
+        }
+        return null;
+    }
+
+    // Optional: Method to close database when needed
+    public void close() {
+        if (dbHelper != null) {
+            dbHelper.close();
+        }
     }
 }

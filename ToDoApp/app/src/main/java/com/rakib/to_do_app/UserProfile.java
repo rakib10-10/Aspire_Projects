@@ -6,10 +6,10 @@ public class UserProfile {
     private String email;
     private String phone;
     private String bio;
-    private String profileImageBase64; // Changed from profileImageUrl
+    private String profileImageBase64;
 
     public UserProfile() {
-        // Default constructor required for Firebase
+        // Default constructor
     }
 
     public UserProfile(String userId, String name, String email, String phone, String bio, String profileImageBase64) {

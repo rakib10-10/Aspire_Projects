@@ -32,6 +32,7 @@ public class AddTaskDialog extends DialogFragment {
     private String selectedCategory = "";
     private String selectedStatus = "running";
     private boolean isEditMode = false;
+    private long existingTaskId = -1;
     private View dialogView;
 
     public interface OnTaskCreatedListener {
@@ -240,41 +241,72 @@ public class AddTaskDialog extends DialogFragment {
 
             if (name.isEmpty() || date.isEmpty() || startTime.isEmpty() || endTime.isEmpty() || desc.isEmpty() || selectedCategory.isEmpty()) {
                 Toast.makeText(getContext(), "Please fill all fields and select a category", Toast.LENGTH_SHORT).show();
-            } else {
-                if (listener != null) {
-                    listener.onTaskCreated(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
-
-                    // Create task and set reminder
-                    Task task = new Task(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
-                    ReminderManager reminderManager = new ReminderManager(requireContext());
-
-                    // Use the proper permission-aware method
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
-                        if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
-                            reminderManager.setInexactReminder(task);
-                        } else {
-                            reminderManager.setReminder(task);
-                        }
-                    } else {
-                        reminderManager.setReminder(task);
-                    }
-
-                    Toast.makeText(getContext(), "Task created with reminder!", Toast.LENGTH_SHORT).show();
-                }
-                dismiss();
+                return;
             }
+
+            // Create task object
+            Task task;
+            if (isEditMode && existingTaskId != -1) {
+                // Update existing task
+                task = new Task(existingTaskId, name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+            } else {
+                // Create new task
+                task = new Task(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+            }
+
+            // Save to SQLite via TaskManager
+            TaskManager taskManager = TaskManager.getInstance(requireContext());
+            if (isEditMode) {
+                taskManager.updateTask(task);
+                Toast.makeText(getContext(), "Task updated successfully!", Toast.LENGTH_SHORT).show();
+            } else {
+                taskManager.addTask(task);
+                Toast.makeText(getContext(), "Task created successfully!", Toast.LENGTH_SHORT).show();
+            }
+
+            // Set reminder
+            ReminderManager reminderManager = new ReminderManager(requireContext());
+            if (isEditMode) {
+                // Cancel existing reminder first
+                reminderManager.cancelReminder(task);
+            }
+
+            // Use the proper permission-aware method
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
+                if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                    reminderManager.setInexactReminder(task);
+                } else {
+                    reminderManager.setReminder(task);
+                }
+            } else {
+                reminderManager.setReminder(task);
+            }
+
+            // Notify listener for UI updates
+            if (listener != null) {
+                listener.onTaskCreated(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+            }
+
+            dismiss();
         });
     }
 
     private void populateExistingData() {
+        existingTaskId = getArguments().getLong("task_id", -1);
         String title = getArguments().getString("title", "");
+        String description = getArguments().getString("description", "");
         String date = getArguments().getString("date", "");
+        String startTime = getArguments().getString("startTime", "");
+        String endTime = getArguments().getString("endTime", "");
         String category = getArguments().getString("category", "");
         String status = getArguments().getString("status", "running");
 
         edtTaskName.setText(title);
+        edtDescription.setText(description);
         edtDate.setText(date);
+        edtStartTime.setText(startTime);
+        edtEndTime.setText(endTime);
 
         if (!category.isEmpty()) {
             selectedCategory = category;
