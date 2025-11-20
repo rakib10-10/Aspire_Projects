@@ -30,6 +30,7 @@
     <color name="error_red">#EF4444</color>
     <color name="info_blue">#3B82F6</color>
 
+    <color name="error">#F44336</color>
     <!-- Neutral Colors -->
 
     <color name="gray_50">#F9FAFB</color>

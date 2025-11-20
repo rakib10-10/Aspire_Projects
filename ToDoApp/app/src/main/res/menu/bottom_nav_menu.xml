@@ -17,7 +17,7 @@
         android:title="Alerts" />
 
     <item
-        android:id="@+id/nav_search"
-        android:icon="@drawable/search"
-        android:title="Search" />
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/outline_account_circle_24"
+        android:title="Profile" />
 </menu>

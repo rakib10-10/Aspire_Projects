@@ -1,3 +1,36 @@
 <resources>
     <string name="app_name">To-Do-App</string>
+    <string name="default_notification_channel_id">task_reminders</string>
+    <string-array name="theme_options">
+        <item>Light</item>
+        <item>Dark</item>
+        <item>System Default</item>
+    </string-array>
+
+    <string-array name="language_options">
+        <item>English</item>
+        <item>Spanish</item>
+        <item>French</item>
+        <item>German</item>
+        <item>Arabic</item>
+    </string-array>
+    <string-array name="reminder_time_options">
+        <item>At time of event</item>
+        <item>5 minutes before</item>
+        <item>15 minutes before</item>
+        <item>30 minutes before</item>
+        <item>1 hour before</item>
+        <item>1 day before</item>
+    </string-array>
+
+    <string-array name="notification_sound_options">
+        <item>Default</item>
+        <item>Gentle</item>
+        <item>Urgent</item>
+        <item>Melodic</item>
+        <item>Vibrate only</item>
+        <item>Silent</item>
+    </string-array>
+
+
 </resources>

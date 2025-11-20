@@ -36,6 +36,10 @@ android {
         jvmTarget = "1.8"
     }
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     packagingOptions {
         exclude("META-INF/DEPENDENCIES")
         exclude("META-INF/LICENSE")
@@ -53,19 +57,44 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // Firebase (using BOM)
-    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-analytics")
+    // Firebase Bill of Materials (BOM) - USE ONLY ONE BOM VERSION
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+
+    // Firebase dependencies (they will use versions from the BOM)
+    implementation("com.google.firebase:firebase-database")        // For profile data (Realtime Database)
+    implementation("com.google.firebase:firebase-firestore")       // For tasks and reminders (Firestore)
+    implementation("com.google.firebase:firebase-auth")            // For authentication
+    implementation("com.google.firebase:firebase-analytics")       // For analytics
+            // For profile pictures storage
 
     // AndroidX
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.work:work-runtime:2.9.0")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.6")   // For image processing
+
+    // UI Libraries
+    implementation("de.hdodenhof:circleimageview:3.1.0")
+    implementation("com.google.android.material:material:1.10.0")
+
+    // Image loading and processing
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // Image Picker (easy to use library)
+
+
+    // Image Compression
+    implementation("id.zelory:compressor:3.0.1")
+
+    // Permissions handling
+    implementation("com.karumi:dexter:6.2.3")
 
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso)
+
 }

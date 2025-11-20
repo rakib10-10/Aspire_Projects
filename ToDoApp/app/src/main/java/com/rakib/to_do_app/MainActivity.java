@@ -1,6 +1,8 @@
 package com.rakib.to_do_app;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
 import android.os.Bundle;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import android.view.MenuItem;
@@ -46,14 +48,22 @@ public class MainActivity extends AppCompatActivity {
                             .replace(R.id.fragment_container, new CalendarFragment())
                             .commit();
                     return true;
-                } else if (itemId == R.id.nav_notifications) {
-                    // Show toast for Notifications (not implemented)
-                    Toast.makeText(MainActivity.this, "Notifications feature coming soon!", Toast.LENGTH_SHORT).show();
-                    return false; // Return false to not select this item
-                } else if (itemId == R.id.nav_search) {
-                    // Show toast for Search (not implemented)
-                    Toast.makeText(MainActivity.this, "Search feature coming soon!", Toast.LENGTH_SHORT).show();
-                    return false; // Return false to not select this item
+                }
+                else if (itemId == R.id.nav_notifications) {
+                    // Open NotificationsFragment
+                    getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_container, new NotificationsFragment())
+                            .commit();
+                    return true;
+                }
+                else if (itemId == R.id.nav_profile) {
+                    // Open ProfileFragment
+                    getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_container, new ProfileFragment())
+                            .commit();
+                    return true;
                 }
 
                 return false;

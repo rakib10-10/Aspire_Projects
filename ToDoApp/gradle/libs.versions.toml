@@ -1,6 +1,7 @@
 [versions]
 androidGradlePlugin = "8.11.2"
 kotlin = "1.9.22"
+firebaseDatabase = "22.0.1"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.6.1" }
@@ -10,6 +11,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version = "1.1.5" }
 androidx-espresso = { group = "androidx.test.espresso", name = "espresso-core", version = "3.5.1" }
+firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebaseDatabase" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
