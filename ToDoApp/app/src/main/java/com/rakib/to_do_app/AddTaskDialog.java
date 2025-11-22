@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 import android.widget.TimePicker;
 
@@ -29,14 +30,18 @@ public class AddTaskDialog extends DialogFragment {
     private EditText edtTaskName, edtDate, edtStartTime, edtEndTime, edtDescription;
     private Button btnDesign, btnMeeting, btnCoding, btnLearning, btnTesting, btnQuickCall;
     private Button btnStatusRunning, btnStatusCompleted;
+    private RadioGroup radioGroupPriority;
     private String selectedCategory = "";
     private String selectedStatus = "running";
+    private String selectedPriority = "Medium";
     private boolean isEditMode = false;
     private long existingTaskId = -1;
     private View dialogView;
 
     public interface OnTaskCreatedListener {
-        void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status);
+        void onTaskCreated(String title, String description, String date,
+                           String startTime, String endTime, String category,
+                           String status, String priority);
     }
 
     private OnTaskCreatedListener listener;
@@ -55,6 +60,7 @@ public class AddTaskDialog extends DialogFragment {
         initializeViews();
         setupCategoryButtons();
         setupStatusButtons();
+        setupPrioritySelection();
         setupDatePicker();
         setupTimePickers();
         setupSaveButton();
@@ -74,6 +80,7 @@ public class AddTaskDialog extends DialogFragment {
         edtStartTime = dialogView.findViewById(R.id.edtStartTime);
         edtEndTime = dialogView.findViewById(R.id.edtEndTime);
         edtDescription = dialogView.findViewById(R.id.taskDescription);
+        radioGroupPriority = dialogView.findViewById(R.id.radio_group_priority);
 
         btnDesign = dialogView.findViewById(R.id.btnDesign);
         btnMeeting = dialogView.findViewById(R.id.btnMeeting);
@@ -88,6 +95,18 @@ public class AddTaskDialog extends DialogFragment {
         edtDate.setInputType(InputType.TYPE_NULL);
         edtStartTime.setInputType(InputType.TYPE_NULL);
         edtEndTime.setInputType(InputType.TYPE_NULL);
+    }
+
+    private void setupPrioritySelection() {
+        radioGroupPriority.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.radio_low) {
+                selectedPriority = "Low";
+            } else if (checkedId == R.id.radio_high) {
+                selectedPriority = "High";
+            } else {
+                selectedPriority = "Medium";
+            }
+        });
     }
 
     private void setupCategoryButtons() {
@@ -254,6 +273,9 @@ public class AddTaskDialog extends DialogFragment {
                 task = new Task(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
             }
 
+            // Set priority
+            task.setPriority(selectedPriority);
+
             // Save to SQLite via TaskManager
             TaskManager taskManager = TaskManager.getInstance(requireContext());
             if (isEditMode) {
@@ -285,7 +307,7 @@ public class AddTaskDialog extends DialogFragment {
 
             // Notify listener for UI updates
             if (listener != null) {
-                listener.onTaskCreated(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+                listener.onTaskCreated(name, desc, date, startTime, endTime, selectedCategory, selectedStatus, selectedPriority);
             }
 
             dismiss();
@@ -301,12 +323,14 @@ public class AddTaskDialog extends DialogFragment {
         String endTime = getArguments().getString("endTime", "");
         String category = getArguments().getString("category", "");
         String status = getArguments().getString("status", "running");
+        String priority = getArguments().getString("priority", "Medium");
 
         edtTaskName.setText(title);
         edtDescription.setText(description);
         edtDate.setText(date);
         edtStartTime.setText(startTime);
         edtEndTime.setText(endTime);
+        selectedPriority = priority;
 
         if (!category.isEmpty()) {
             selectedCategory = category;
@@ -316,6 +340,21 @@ public class AddTaskDialog extends DialogFragment {
         if (!status.isEmpty()) {
             selectedStatus = status;
             highlightStatusButton(status);
+        }
+
+        // Set priority radio button
+        if (priority != null) {
+            switch (priority.toLowerCase()) {
+                case "low":
+                    radioGroupPriority.check(R.id.radio_low);
+                    break;
+                case "high":
+                    radioGroupPriority.check(R.id.radio_high);
+                    break;
+                default:
+                    radioGroupPriority.check(R.id.radio_medium);
+                    break;
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 package com.rakib.to_do_app;
 
+import android.widget.RadioGroup;
+
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -13,13 +15,15 @@ public class Task {
     private String endTime;
     private String category;
     private String status;
+    private String priority;
+
 
     public Task() {
         this.id = System.currentTimeMillis();
         this.status = "running";
     }
 
-    public Task(String title, String description, String date, String startTime, String endTime, String category, String status) {
+    public Task(String title, String description, String date, String startTime, String endTime, String category, String priority) {
         this.id = System.currentTimeMillis();
         this.title = title;
         this.description = description;
@@ -27,7 +31,8 @@ public class Task {
         this.startTime = startTime;
         this.endTime = endTime;
         this.category = category;
-        this.status = status;
+        this.status = "running";
+        this.priority = priority;
     }
 
     public Task(long id, String title, String description, String date, String startTime, String endTime, String category, String status) {
@@ -71,6 +76,12 @@ public class Task {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getPriority() { return priority; } // Add getter
+    public void setPriority(String priority) { this.priority = priority; } // Add setter
+
+
+
 
     public Date getDueDate() {
         try {

@@ -175,8 +175,9 @@ public class CalendarFragment extends Fragment {
 
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
-            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status) {
+            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) { // Add priority parameter
                 Task task = new Task(title, description, date, startTime, endTime, category, status);
+                task.setPriority(priority); // Set priority here
 
                 // Add to TaskManager (which handles Firestore)
                 TaskManager.getInstance().addTask(task);
@@ -229,11 +230,12 @@ public class CalendarFragment extends Fragment {
         args.putString("endTime", task.getEndTime());
         args.putString("category", task.getCategory());
         args.putString("status", task.getStatus());
+        args.putString("priority", task.getPriority()); // Add priority to bundle
         dialog.setArguments(args);
 
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
-            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status) {
+            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) { // Add priority parameter
                 // Cancel old reminder
                 ReminderManager reminderManager = new ReminderManager(requireContext());
                 reminderManager.cancelReminder(task);
@@ -246,6 +248,7 @@ public class CalendarFragment extends Fragment {
                 task.setEndTime(endTime);
                 task.setCategory(category);
                 task.setStatus(status);
+                task.setPriority(priority); // Set priority here
 
                 // Update in TaskManager (which handles Firestore)
                 TaskManager.getInstance().updateTask(task);

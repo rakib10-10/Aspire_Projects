@@ -157,8 +157,23 @@
                     android:textStyle="bold"
                     android:textAllCaps="true"
                     android:textColor="@color/white" />
+
             </LinearLayout>
+
+
+
         </LinearLayout>
+        <TextView
+            android:id="@+id/txtPriority"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Medium"
+            android:layout_marginTop="10dp"
+            android:textSize="12sp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:background="@drawable/priority_background"
+            android:textColor="@color/white" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

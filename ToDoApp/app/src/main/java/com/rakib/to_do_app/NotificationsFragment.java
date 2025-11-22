@@ -199,7 +199,28 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void saveNotificationSetting(String key, Object value) {
-        dbHelper.updateNotificationSetting(key, value);
+        // Map the old key names to new database column names
+        String databaseKey;
+        switch (key) {
+            case "defaultReminderTime":
+                databaseKey = "default_reminder_time";
+                break;
+            case "notificationSound":
+                databaseKey = "notification_sound";
+                break;
+            case "taskRemindersEnabled":
+                databaseKey = "task_reminders_enabled";
+                break;
+            case "dueDateAlertsEnabled":
+                databaseKey = "due_date_alerts_enabled";
+                break;
+            case "dailySummaryEnabled":
+                databaseKey = "daily_summary_enabled";
+                break;
+            default:
+                databaseKey = key;
+        }
+        dbHelper.updateNotificationSetting(databaseKey, value);
         Log.d(TAG, "Notification setting saved to SQLite: " + key + " = " + value);
     }
 

@@ -169,7 +169,6 @@ public class HomeFragment extends Fragment {
         AddTaskDialog dialog = new AddTaskDialog();
 
         Bundle args = new Bundle();
-        args.putLong("task_id", task.getId());
         args.putString("title", task.getTitle());
         args.putString("description", task.getDescription());
         args.putString("date", task.getDate());
@@ -177,11 +176,12 @@ public class HomeFragment extends Fragment {
         args.putString("endTime", task.getEndTime());
         args.putString("category", task.getCategory());
         args.putString("status", task.getStatus());
+        args.putString("priority", task.getPriority()); // Add priority to bundle
         dialog.setArguments(args);
 
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
-            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status) {
+            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
                 // Cancel old reminder
                 ReminderManager reminderManager = new ReminderManager(requireContext());
                 reminderManager.cancelReminder(task);
@@ -194,15 +194,16 @@ public class HomeFragment extends Fragment {
                 task.setEndTime(endTime);
                 task.setCategory(category);
                 task.setStatus(status);
+                task.setPriority(priority); // Set priority here
 
-                // Update in TaskManager (SQLite)
+                // Update in TaskManager
                 taskManager.updateTask(task);
 
                 // Set new reminder
                 reminderManager.setReminder(task);
 
-                // Refresh the task list
-                filterTasksByStatus(currentTab);
+                // Refresh local list
+                loadTasks();
 
                 Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();
             }

@@ -1,5 +1,7 @@
 package com.rakib.to_do_app;
 
+import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +9,7 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +45,21 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.txtDescription.setText(task.getDescription());
         holder.txtDate.setText(task.getDate());
 
+        // Display Priority
+        if (task.getPriority() != null && !task.getPriority().isEmpty()) {
+            holder.txtPriority.setText(task.getPriority());
+            holder.txtPriority.setVisibility(View.VISIBLE);
+
+            // Set priority background color based on priority level
+            int priorityColor = getPriorityColor(holder.itemView.getContext(), task.getPriority());
+            holder.txtPriority.setBackgroundColor(priorityColor);
+
+            // Set text color to white for better visibility
+            holder.txtPriority.setTextColor(Color.WHITE);
+        } else {
+            holder.txtPriority.setVisibility(View.GONE);
+        }
+
         if (task.getCategory() != null && !task.getCategory().isEmpty()) {
             holder.txtCategory.setText("Category: " + task.getCategory());
             holder.txtCategory.setVisibility(View.VISIBLE);
@@ -60,13 +78,38 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         if (task.getStatus() != null) {
             holder.txtStatus.setText("Status: " + getStatusDisplayText(task.getStatus()));
             holder.txtStatus.setVisibility(View.VISIBLE);
-            int statusColor = getStatusColor(holder.itemView, task.getStatus());
+            int statusColor = getStatusColor(holder.itemView.getContext(), task.getStatus());
             holder.txtStatus.setTextColor(statusColor);
         } else {
             holder.txtStatus.setVisibility(View.GONE);
         }
 
         holder.btnMore.setOnClickListener(v -> showPopupMenu(v, position, task.getStatus()));
+    }
+
+    // Add this helper method to get priority colors
+    private int getPriorityColor(Context context, String priority) {
+        switch (priority.toLowerCase()) {
+            case "high":
+                return ContextCompat.getColor(context, R.color.priority_high);
+            case "medium":
+                return ContextCompat.getColor(context, R.color.priority_medium);
+            case "low":
+                return ContextCompat.getColor(context, R.color.priority_low);
+            default:
+                return ContextCompat.getColor(context, R.color.priority_default);
+        }
+    }
+
+    private int getStatusColor(Context context, String status) {
+        switch (status) {
+            case "running":
+                return ContextCompat.getColor(context, android.R.color.holo_orange_dark);
+            case "completed":
+                return ContextCompat.getColor(context, android.R.color.holo_green_dark);
+            default:
+                return ContextCompat.getColor(context, android.R.color.holo_orange_dark);
+        }
     }
 
     private void showPopupMenu(View view, int position, String currentStatus) {
@@ -102,17 +145,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
     }
 
-    private int getStatusColor(View view, String status) {
-        switch (status) {
-            case "running":
-                return view.getContext().getColor(android.R.color.holo_orange_dark);
-            case "completed":
-                return view.getContext().getColor(android.R.color.holo_green_dark);
-            default:
-                return view.getContext().getColor(android.R.color.holo_orange_dark);
-        }
-    }
-
     @Override
     public int getItemCount() {
         return taskList.size();
@@ -132,7 +164,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView txtTitle, txtDescription, txtDate, txtCategory, txtTime, txtStatus;
+        TextView txtTitle, txtDescription, txtDate, txtCategory, txtTime, txtStatus, txtPriority;
         ImageView btnMore;
 
         public TaskViewHolder(@NonNull View itemView) {
@@ -143,6 +175,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             txtCategory = itemView.findViewById(R.id.taskCategoryText);
             txtTime = itemView.findViewById(R.id.taskTimeText);
             txtStatus = itemView.findViewById(R.id.taskStatusText);
+            txtPriority = itemView.findViewById(R.id.txtPriority); // Make sure this ID exists in your layout
             btnMore = itemView.findViewById(R.id.btnMoreOptions);
         }
     }

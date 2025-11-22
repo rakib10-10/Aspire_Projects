@@ -20,6 +20,7 @@
     <color name="primary_light">#C7D2FE</color>
     <color name="primary_surface">#EEF2FF</color>
 
+
     <!-- Secondary Colors -->
     <color name="secondary_color">#EC4899</color>
     <color name="secondary_light">#FBCFE8</color>
@@ -111,5 +112,10 @@
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
 
+
+    <color name="priority_low">#4CAF50</color>
+    <color name="priority_medium">#FF9800</color>
+    <color name="priority_high">#F44336</color>
+    <color name="priority_default">#2196F3</color>
 
 </resources>
