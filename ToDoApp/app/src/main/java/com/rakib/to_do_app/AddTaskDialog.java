@@ -11,6 +11,8 @@ import android.os.Bundle;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioGroup;
@@ -22,13 +24,17 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class AddTaskDialog extends DialogFragment {
 
     private EditText edtTaskName, edtDate, edtStartTime, edtEndTime, edtDescription;
-    private Button btnDesign, btnMeeting, btnCoding, btnLearning, btnTesting, btnQuickCall;
+    private AutoCompleteTextView autoCompleteCategory;
     private Button btnStatusRunning, btnStatusCompleted;
     private RadioGroup radioGroupPriority;
     private String selectedCategory = "";
@@ -37,6 +43,7 @@ public class AddTaskDialog extends DialogFragment {
     private boolean isEditMode = false;
     private long existingTaskId = -1;
     private View dialogView;
+    private List<String> categoryList = new ArrayList<>();
 
     public interface OnTaskCreatedListener {
         void onTaskCreated(String title, String description, String date,
@@ -58,7 +65,7 @@ public class AddTaskDialog extends DialogFragment {
         dialogView = inflater.inflate(R.layout.dialog_add_task, null);
 
         initializeViews();
-        setupCategoryButtons();
+        setupCategoryAutoComplete();
         setupStatusButtons();
         setupPrioritySelection();
         setupDatePicker();
@@ -80,14 +87,8 @@ public class AddTaskDialog extends DialogFragment {
         edtStartTime = dialogView.findViewById(R.id.edtStartTime);
         edtEndTime = dialogView.findViewById(R.id.edtEndTime);
         edtDescription = dialogView.findViewById(R.id.taskDescription);
+        autoCompleteCategory = dialogView.findViewById(R.id.autoCompleteCategory);
         radioGroupPriority = dialogView.findViewById(R.id.radio_group_priority);
-
-        btnDesign = dialogView.findViewById(R.id.btnDesign);
-        btnMeeting = dialogView.findViewById(R.id.btnMeeting);
-        btnCoding = dialogView.findViewById(R.id.btnCoding);
-        btnLearning = dialogView.findViewById(R.id.btnLearning);
-        btnTesting = dialogView.findViewById(R.id.btnTesting);
-        btnQuickCall = dialogView.findViewById(R.id.btnQuickCall);
 
         btnStatusRunning = dialogView.findViewById(R.id.btnStatusRunning);
         btnStatusCompleted = dialogView.findViewById(R.id.btnStatusCompleted);
@@ -95,35 +96,54 @@ public class AddTaskDialog extends DialogFragment {
         edtDate.setInputType(InputType.TYPE_NULL);
         edtStartTime.setInputType(InputType.TYPE_NULL);
         edtEndTime.setInputType(InputType.TYPE_NULL);
+
+        // Initialize with some common categories
+        categoryList.add("Work");
+        categoryList.add("Personal");
+        categoryList.add("Study");
+        categoryList.add("Health");
+        categoryList.add("Shopping");
+        categoryList.add("Meeting");
+        categoryList.add("Exercise");
+        categoryList.add("Family");
     }
 
-    private void setupPrioritySelection() {
-        radioGroupPriority.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.radio_low) {
-                selectedPriority = "Low";
-            } else if (checkedId == R.id.radio_high) {
-                selectedPriority = "High";
-            } else {
-                selectedPriority = "Medium";
+    private void setupCategoryAutoComplete() {
+        // Create adapter for AutoCompleteTextView
+        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                categoryList
+        );
+        autoCompleteCategory.setAdapter(categoryAdapter);
+
+        // Set threshold to show suggestions after 1 character
+        autoCompleteCategory.setThreshold(1);
+
+        // Listen for category selection
+        autoCompleteCategory.setOnItemClickListener((parent, view, position, id) -> {
+            selectedCategory = (String) parent.getItemAtPosition(position);
+        });
+
+        // Also allow custom input
+        autoCompleteCategory.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                String input = autoCompleteCategory.getText().toString().trim();
+                if (!input.isEmpty()) {
+                    selectedCategory = input;
+                    // Add to suggestions if it's new
+                    if (!categoryList.contains(input)) {
+                        categoryList.add(input);
+                        ArrayAdapter<String> updatedAdapter = new ArrayAdapter<>(
+                                requireContext(),
+                                android.R.layout.simple_dropdown_item_1line,
+                                categoryList
+                        );
+                        autoCompleteCategory.setAdapter(updatedAdapter);
+                    }
+                }
             }
         });
-    }
-
-    private void setupCategoryButtons() {
-        View.OnClickListener categoryClickListener = v -> {
-            resetCategoryButtons();
-            Button clickedButton = (Button) v;
-            clickedButton.setBackgroundResource(R.drawable.category_chip_selected);
-            clickedButton.setTextColor(getResources().getColor(android.R.color.white));
-            selectedCategory = clickedButton.getText().toString();
-        };
-
-        btnDesign.setOnClickListener(categoryClickListener);
-        btnMeeting.setOnClickListener(categoryClickListener);
-        btnCoding.setOnClickListener(categoryClickListener);
-        btnLearning.setOnClickListener(categoryClickListener);
-        btnTesting.setOnClickListener(categoryClickListener);
-        btnQuickCall.setOnClickListener(categoryClickListener);
     }
 
     private void setupStatusButtons() {
@@ -145,20 +165,16 @@ public class AddTaskDialog extends DialogFragment {
         btnStatusRunning.setTextColor(getResources().getColor(android.R.color.white));
     }
 
-    private void resetCategoryButtons() {
-        int unselectedBackground = R.drawable.category_chip_unselected;
-        btnDesign.setBackgroundResource(unselectedBackground);
-        btnDesign.setTextColor(getResources().getColor(android.R.color.black));
-        btnMeeting.setBackgroundResource(unselectedBackground);
-        btnMeeting.setTextColor(getResources().getColor(android.R.color.black));
-        btnCoding.setBackgroundResource(unselectedBackground);
-        btnCoding.setTextColor(getResources().getColor(android.R.color.black));
-        btnLearning.setBackgroundResource(unselectedBackground);
-        btnLearning.setTextColor(getResources().getColor(android.R.color.black));
-        btnTesting.setBackgroundResource(unselectedBackground);
-        btnTesting.setTextColor(getResources().getColor(android.R.color.black));
-        btnQuickCall.setBackgroundResource(unselectedBackground);
-        btnQuickCall.setTextColor(getResources().getColor(android.R.color.black));
+    private void setupPrioritySelection() {
+        radioGroupPriority.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.radio_low) {
+                selectedPriority = "Low";
+            } else if (checkedId == R.id.radio_high) {
+                selectedPriority = "High";
+            } else {
+                selectedPriority = "Medium";
+            }
+        });
     }
 
     private void resetStatusButtons() {
@@ -257,20 +273,23 @@ public class AddTaskDialog extends DialogFragment {
             String startTime = edtStartTime.getText().toString().trim();
             String endTime = edtEndTime.getText().toString().trim();
             String desc = edtDescription.getText().toString().trim();
+            String category = autoCompleteCategory.getText().toString().trim();
 
-            if (name.isEmpty() || date.isEmpty() || startTime.isEmpty() || endTime.isEmpty() || desc.isEmpty() || selectedCategory.isEmpty()) {
-                Toast.makeText(getContext(), "Please fill all fields and select a category", Toast.LENGTH_SHORT).show();
+            if (name.isEmpty() || date.isEmpty() || startTime.isEmpty() || endTime.isEmpty() || desc.isEmpty() || category.isEmpty()) {
+                Toast.makeText(getContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
                 return;
             }
+
+            selectedCategory = category;
 
             // Create task object
             Task task;
             if (isEditMode && existingTaskId != -1) {
                 // Update existing task
-                task = new Task(existingTaskId, name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+                task = new Task(existingTaskId, name, desc, date, startTime, endTime, category, selectedStatus);
             } else {
                 // Create new task
-                task = new Task(name, desc, date, startTime, endTime, selectedCategory, selectedStatus);
+                task = new Task(name, desc, date, startTime, endTime, category, selectedStatus);
             }
 
             // Set priority
@@ -307,7 +326,7 @@ public class AddTaskDialog extends DialogFragment {
 
             // Notify listener for UI updates
             if (listener != null) {
-                listener.onTaskCreated(name, desc, date, startTime, endTime, selectedCategory, selectedStatus, selectedPriority);
+                listener.onTaskCreated(name, desc, date, startTime, endTime, category, selectedStatus, selectedPriority);
             }
 
             dismiss();
@@ -330,12 +349,9 @@ public class AddTaskDialog extends DialogFragment {
         edtDate.setText(date);
         edtStartTime.setText(startTime);
         edtEndTime.setText(endTime);
+        autoCompleteCategory.setText(category);
+        selectedCategory = category;
         selectedPriority = priority;
-
-        if (!category.isEmpty()) {
-            selectedCategory = category;
-            highlightCategoryButton(category);
-        }
 
         if (!status.isEmpty()) {
             selectedStatus = status;
@@ -355,36 +371,6 @@ public class AddTaskDialog extends DialogFragment {
                     radioGroupPriority.check(R.id.radio_medium);
                     break;
             }
-        }
-    }
-
-    private void highlightCategoryButton(String category) {
-        resetCategoryButtons();
-        switch (category) {
-            case "Design":
-                btnDesign.setBackgroundResource(R.drawable.category_chip_selected);
-                btnDesign.setTextColor(getResources().getColor(android.R.color.white));
-                break;
-            case "Meeting":
-                btnMeeting.setBackgroundResource(R.drawable.category_chip_selected);
-                btnMeeting.setTextColor(getResources().getColor(android.R.color.white));
-                break;
-            case "Coding":
-                btnCoding.setBackgroundResource(R.drawable.category_chip_selected);
-                btnCoding.setTextColor(getResources().getColor(android.R.color.white));
-                break;
-            case "Learning":
-                btnLearning.setBackgroundResource(R.drawable.category_chip_selected);
-                btnLearning.setTextColor(getResources().getColor(android.R.color.white));
-                break;
-            case "Testing":
-                btnTesting.setBackgroundResource(R.drawable.category_chip_selected);
-                btnTesting.setTextColor(getResources().getColor(android.R.color.white));
-                break;
-            case "Quick Call":
-                btnQuickCall.setBackgroundResource(R.drawable.category_chip_selected);
-                btnQuickCall.setTextColor(getResources().getColor(android.R.color.white));
-                break;
         }
     }
 
