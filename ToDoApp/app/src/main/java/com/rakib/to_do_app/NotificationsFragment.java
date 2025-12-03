@@ -1,5 +1,9 @@
 package com.rakib.to_do_app;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,6 +13,9 @@ import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -28,35 +35,32 @@ public class NotificationsFragment extends Fragment {
     private RecyclerView recyclerViewNotifications;
     private LinearLayout emptyStateLayout;
     private MaterialToolbar toolbar;
+    private SwitchMaterial switchDarkTheme;
 
     // Adapter
     private NotificationAdapter notificationAdapter;
     private List<NotificationItem> notificationList;
 
-    // Database
+
     private DatabaseHelper dbHelper;
+
+
+    private ActivityResultLauncher<Intent> ringtonePickerLauncher;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.activity_notifications, container, false);
+         View view = inflater.inflate(R.layout.activity_notifications, container, false);
 
-        // Initialize Database
         dbHelper = new DatabaseHelper(requireContext());
 
-        // Initialize views
         initializeViews(view);
-
-        // Setup spinners
+        setupRingtonePickerLauncher(); // launcher set up
         setupSpinners();
-
-        // Setup switches
         setupSwitches();
-
-        // Setup recycler view
         setupRecyclerView();
 
-        // Load notification settings and data
         loadNotificationSettings();
         loadNotifications();
 
@@ -64,27 +68,49 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void initializeViews(View view) {
-        // Initialize toolbar
         toolbar = view.findViewById(R.id.toolbar);
-
-        // Initialize switches
         switchTaskReminders = view.findViewById(R.id.switch_task_reminders);
         switchDueDateAlerts = view.findViewById(R.id.switch_due_date_alerts);
         switchDailySummary = view.findViewById(R.id.switch_daily_summary);
 
-        // Initialize spinners
+        // Initializing the Dark Theme Switch
+        switchDarkTheme = view.findViewById(R.id.switch_dark_theme);
+
         spinnerReminderTime = view.findViewById(R.id.spinner_reminder_time);
         spinnerNotificationSound = view.findViewById(R.id.spinner_notification_sound);
 
-        // Initialize recycler view and empty state
         recyclerViewNotifications = view.findViewById(R.id.recycler_view_notifications);
         emptyStateLayout = view.findViewById(R.id.empty_state_layout);
 
-        // Initialize notification list
         notificationList = new ArrayList<>();
 
         Log.d(TAG, "All views initialized successfully");
     }
+
+    // Implementing the Ringtone Picker Launcher setup
+    private void setupRingtonePickerLauncher() {
+        ringtonePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
+                        if (uri != null) {
+                            // Storing the URI as a string
+                            String uriString = uri.toString();
+                            saveNotificationSetting("notificationSound", uriString);
+
+                            setSpinnerSelection(spinnerNotificationSound, uriString);
+
+                            Toast.makeText(requireContext(), "Custom sound set!", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+
+                        loadNotificationSettings();
+                    }
+                }
+        );
+    }
+
 
     private void setupSpinners() {
         // Reminder time options
@@ -122,11 +148,20 @@ public class NotificationsFragment extends Fragment {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
                 String selectedSound = parent.getItemAtPosition(position).toString();
-                saveNotificationSetting("notificationSound", selectedSound);
-                Log.d(TAG, "Notification sound selected: " + selectedSound);
 
-                // Test the selected sound
-                testNotificationSound(selectedSound);
+                if (selectedSound.equals("Custom...")) {
+                    // Launch the Ringtone Picker using the launcher
+                    Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
+                    intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
+                    intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Notification Sound");
+                    ringtonePickerLauncher.launch(intent);
+
+                } else {
+                    // Save and test built-in sound
+                    saveNotificationSetting("notificationSound", selectedSound);
+                    Log.d(TAG, "Notification sound selected: " + selectedSound);
+                    testNotificationSound(selectedSound);
+                }
             }
 
             @Override
@@ -140,31 +175,29 @@ public class NotificationsFragment extends Fragment {
 
     private void setupSwitches() {
         // Task Reminders switch
-        switchTaskReminders.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                saveNotificationSetting("taskRemindersEnabled", isChecked);
-                Log.d(TAG, "Task reminders: " + (isChecked ? "enabled" : "disabled"));
-            }
+        switchTaskReminders.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveNotificationSetting("taskRemindersEnabled", isChecked);
+            Log.d(TAG, "Task reminders: " + (isChecked ? "enabled" : "disabled"));
         });
 
         // Due Date Alerts switch
-        switchDueDateAlerts.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                saveNotificationSetting("dueDateAlertsEnabled", isChecked);
-                Log.d(TAG, "Due date alerts: " + (isChecked ? "enabled" : "disabled"));
-            }
+        switchDueDateAlerts.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveNotificationSetting("dueDateAlertsEnabled", isChecked);
+            Log.d(TAG, "Due date alerts: " + (isChecked ? "enabled" : "disabled"));
         });
 
         // Daily Summary switch
-        switchDailySummary.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                saveNotificationSetting("dailySummaryEnabled", isChecked);
-                Log.d(TAG, "Daily summary: " + (isChecked ? "enabled" : "disabled"));
-            }
+        switchDailySummary.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveNotificationSetting("dailySummaryEnabled", isChecked);
+            Log.d(TAG, "Daily summary: " + (isChecked ? "enabled" : "disabled"));
         });
+
+
+        if (switchDarkTheme != null) {
+            switchDarkTheme.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                Toast.makeText(requireContext(), "Dark Mode is " + (isChecked ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
+            });
+        }
     }
 
     private void setupRecyclerView() {
@@ -180,26 +213,46 @@ public class NotificationsFragment extends Fragment {
         switchTaskReminders.setChecked(settings.isTaskRemindersEnabled());
         switchDueDateAlerts.setChecked(settings.isDueDateAlertsEnabled());
         switchDailySummary.setChecked(settings.isDailySummaryEnabled());
+
+
+
         setSpinnerSelection(spinnerReminderTime, settings.getDefaultReminderTime());
         setSpinnerSelection(spinnerNotificationSound, settings.getNotificationSound());
 
         Log.d(TAG, "Notification settings loaded successfully");
     }
 
+    //spinner option
+
     private void setSpinnerSelection(Spinner spinner, String value) {
         if (spinner.getAdapter() != null && value != null) {
             ArrayAdapter adapter = (ArrayAdapter) spinner.getAdapter();
             for (int i = 0; i < adapter.getCount(); i++) {
-                if (adapter.getItem(i).toString().equalsIgnoreCase(value)) {
-                    spinner.setSelection(i);
-                    break;
+                String item = adapter.getItem(i).toString();
+
+                // If value is a standard name OR a custom URI, match it directly
+                if (item.equalsIgnoreCase(value) || value.startsWith("content://")) {
+                    if (value.startsWith("content://")) {
+                        // Check if "Custom" is an option before setting it
+                        if (item.equals("Custom...")) {
+                            spinner.setSelection(i);
+                            return;
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    if (item.equalsIgnoreCase(value)) {
+                        spinner.setSelection(i);
+                        return;
+                    }
                 }
             }
         }
     }
 
     private void saveNotificationSetting(String key, Object value) {
-        // Map the old key names to new database column names
+        // Mapping the old key names to new database column names
         String databaseKey;
         switch (key) {
             case "defaultReminderTime":
@@ -225,32 +278,30 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void loadNotifications() {
-        // For now, we'll create some sample notifications
         createSampleNotifications();
     }
 
     private void createSampleNotifications() {
         notificationList.clear();
 
-        // Add sample notifications
         notificationList.add(new NotificationItem(
                 "Task Reminder",
                 "Complete 'Buy groceries' task",
-                System.currentTimeMillis() - 3600000, // 1 hour ago
+                System.currentTimeMillis() - 3600000,
                 "task"
         ));
 
         notificationList.add(new NotificationItem(
                 "Due Date Alert",
                 "'Project deadline' is due tomorrow",
-                System.currentTimeMillis() - 86400000, // 1 day ago
+                System.currentTimeMillis() - 86400000,
                 "due_date"
         ));
 
         notificationList.add(new NotificationItem(
                 "Daily Summary",
                 "You have 3 tasks due today",
-                System.currentTimeMillis() - 172800000, // 2 days ago
+                System.currentTimeMillis() - 172800000,
                 "summary"
         ));
 

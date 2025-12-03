@@ -48,7 +48,7 @@ public class ProfileFragment extends Fragment {
 
         Log.d(TAG, "onCreateView: Fragment created");
 
-        // Initialize SQLite Database
+        // Initializing SQLite Database
         dbHelper = new DatabaseHelper(requireContext());
 
         // Initialize views
@@ -94,7 +94,7 @@ public class ProfileFragment extends Fragment {
         etPhone.setText(userProfile.getPhone());
         etBio.setText(userProfile.getBio());
 
-        // Load profile image from Base64 if exists
+        // Loading profile image from Base64
         if (userProfile.getProfileImageBase64() != null && !userProfile.getProfileImageBase64().isEmpty()) {
             currentBase64Image = userProfile.getProfileImageBase64();
             loadBase64Image(userProfile.getProfileImageBase64());

@@ -14,7 +14,7 @@ public class NotificationHelper {
     private static final String CHANNEL_ID = "todo_app_channel";
     private static final String CHANNEL_NAME = "ToDo App Notifications";
 
-    // Create notification channel (required for Android 8.0+)
+    // Creating notification channel
     public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -30,9 +30,17 @@ public class NotificationHelper {
         }
     }
 
-    // Get sound URI based on selection
-    public static Uri getSoundUri(String soundName) {
-        switch (soundName) {
+
+    public static Uri getSoundUri(String soundNameOrUri) {
+        if (soundNameOrUri == null) return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
+        // 1. Check if it's a stored URI string
+        if (soundNameOrUri.startsWith("content://")) {
+            return Uri.parse(soundNameOrUri);
+        }
+
+        // 2. Check predefined names
+        switch (soundNameOrUri) {
             case "Gentle":
                 return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             case "Urgent":
@@ -40,26 +48,26 @@ public class NotificationHelper {
             case "Melodic":
                 return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             case "Vibrate only":
-                return null; // No sound, only vibrate
             case "Silent":
-                return null; // No sound and no vibrate
+                return null; // No sound
             case "Default":
             default:
                 return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         }
     }
 
-    // Play test sound when user selects a sound
-    public static void playTestSound(Context context, String soundName) {
-        try {
-            Uri soundUri = getSoundUri(soundName);
 
-            if (soundUri == null && "Vibrate only".equals(soundName)) {
+    public static void playTestSound(Context context, String soundNameOrUri) {
+        try {
+            Uri soundUri = getSoundUri(soundNameOrUri);
+
+            if (soundUri == null && "Vibrate only".equals(soundNameOrUri)) {
                 // Vibrate only
                 android.os.Vibrator vibrator =
                         (android.os.Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                 if (vibrator != null && vibrator.hasVibrator()) {
-                    vibrator.vibrate(500); // Vibrate for 500ms
+
+                    vibrator.vibrate(500);
                 }
                 return;
             } else if (soundUri == null) {
@@ -67,20 +75,20 @@ public class NotificationHelper {
                 return;
             }
 
-            // Create a test notification with the selected sound
+            // test notification with the selected sound
             NotificationManager notificationManager =
                     (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
             createNotificationChannel(context);
 
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.outline_add_alert_24)
+                    .setSmallIcon(R.drawable.outline_add_alert_24) // Assuming this drawable exists
                     .setContentTitle("Sound Test")
-                    .setContentText("Testing: " + soundName)
+                    .setContentText("Testing: " + soundNameOrUri)
                     .setSound(soundUri)
                     .setAutoCancel(true);
 
-            if (!"Silent".equals(soundName)) {
+            if (!"Silent".equals(soundNameOrUri)) {
                 builder.setVibrate(new long[]{0, 300, 200, 300}); // Vibrate pattern
             }
 
@@ -91,7 +99,7 @@ public class NotificationHelper {
         }
     }
 
-    // Method to create actual notifications for tasks/reminders
+    // Method to create notifications for tasks/reminders
     public static void sendNotification(Context context, String title, String message, String soundPreference) {
         try {
             Uri soundUri = getSoundUri(soundPreference);
@@ -110,7 +118,7 @@ public class NotificationHelper {
                 builder.setSound(soundUri);
             }
 
-            if ("Vibrate only".equals(soundPreference) || soundUri != null) {
+            if ("Vibrate only".equals(soundPreference) || (soundUri != null && !"Silent".equals(soundPreference))) {
                 builder.setVibrate(new long[]{0, 300, 200, 300});
             }
 

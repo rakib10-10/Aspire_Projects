@@ -105,7 +105,7 @@ public class CalendarFragment extends Fragment {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
             if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
-                // Use inexact alarms if we don't have permission
+
                 reminderManager.setInexactReminder(
                         task.getId(),
                         task.getTitle(),
@@ -116,7 +116,7 @@ public class CalendarFragment extends Fragment {
             }
         }
 
-        // We have permission or it's not required (Android < 12)
+        //
         reminderManager.setReminder(
                 task.getId(),
                 task.getTitle(),
@@ -143,7 +143,7 @@ public class CalendarFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // This is correct: it calls the dialog method when the FAB is clicked
+        // calls the dialog method when the FAB is clicked
         btnAddTask.setOnClickListener(v -> openAddTaskDialog());
     }
 
@@ -180,8 +180,8 @@ public class CalendarFragment extends Fragment {
 
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-                // FIX: Remove redundant save logic. The dialog now saves the task itself.
-                // We only need to refresh the list here.
+                // Removing redundant save logic. The dialog now saves the task itself.
+
 
                 // Refresh local list
                 taskList = TaskManager.getInstance(requireContext()).getTasks();
@@ -236,8 +236,7 @@ public class CalendarFragment extends Fragment {
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-                // FIX: Remove redundant update logic. The dialog now updates the task itself.
-                // We only need to refresh the list here.
+                //  Removing redundant update logic. The dialog now updates the task itself.
 
                 // Refresh local list
                 taskList = TaskManager.getInstance(requireContext()).getTasks();

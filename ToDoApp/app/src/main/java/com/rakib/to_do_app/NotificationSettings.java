@@ -4,7 +4,7 @@ public class NotificationSettings {
     private boolean taskRemindersEnabled;
     private boolean dueDateAlertsEnabled;
     private boolean dailySummaryEnabled;
-    private String defaultReminderTime; // Add this field
+    private String defaultReminderTime;
     private String notificationSound;
 
     public NotificationSettings() {
@@ -32,8 +32,8 @@ public class NotificationSettings {
         this.dailySummaryEnabled = dailySummaryEnabled;
     }
 
-    public String getDefaultReminderTime() { return defaultReminderTime; } // Add getter
-    public void setDefaultReminderTime(String defaultReminderTime) { // Add setter
+    public String getDefaultReminderTime() { return defaultReminderTime; }
+    public void setDefaultReminderTime(String defaultReminderTime) {
         this.defaultReminderTime = defaultReminderTime;
     }
 

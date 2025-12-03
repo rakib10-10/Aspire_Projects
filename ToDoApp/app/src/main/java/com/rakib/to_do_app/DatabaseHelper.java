@@ -113,7 +113,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_NOTIFICATION_SETTINGS);
         db.execSQL(CREATE_TABLE_REMINDERS);
 
-        // Insert default notification settings
+        // Inserting default notification settings
         insertDefaultNotificationSettings(db);
         Log.d(TAG, "Database tables created successfully");
     }
@@ -140,7 +140,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Log.d(TAG, "Default notification settings inserted");
     }
 
-    // ==================== TASK OPERATIONS ====================
+
 
     public long addTask(Task task) {
         SQLiteDatabase db = this.getWritableDatabase();
@@ -204,7 +204,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_TASK_CATEGORY, task.getCategory());
         values.put(KEY_TASK_STATUS, task.getStatus());
         values.put(KEY_TASK_PRIORITY, task.getPriority());
-        values.put(KEY_TASK_COLOR_TAG, task.getColorTag()); // FIXED: Added color tag
+        values.put(KEY_TASK_COLOR_TAG, task.getColorTag());
 
         int rowsAffected = db.update(TABLE_TASKS, values, KEY_ID + " = ?",
                 new String[]{String.valueOf(task.getId())});
@@ -221,12 +221,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Log.d(TAG, "Task deleted with ID: " + taskId);
     }
 
-    // ==================== USER PROFILE OPERATIONS ====================
+
 
     public long saveUserProfile(UserProfile profile) {
         SQLiteDatabase db = this.getWritableDatabase();
 
-        // First, check if profile exists
+        // checking if profile exists
         Cursor cursor = db.query(TABLE_USER_PROFILE, null, null, null, null, null, null);
         boolean profileExists = cursor.getCount() > 0;
         cursor.close();
@@ -287,7 +287,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return defaultProfile;
     }
 
-    // ==================== NOTIFICATION SETTINGS OPERATIONS ====================
+
 
     public NotificationSettings getNotificationSettings() {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -323,7 +323,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         Log.d(TAG, "Notification setting updated: " + key + " = " + value);
     }
 
-    // ==================== REMINDER OPERATIONS ====================
+
 
     public long saveReminder(long taskId, String title, String description, long reminderTime) {
         SQLiteDatabase db = this.getWritableDatabase();

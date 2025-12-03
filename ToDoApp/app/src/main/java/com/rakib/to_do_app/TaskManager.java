@@ -9,11 +9,11 @@ import java.util.List;
 public class TaskManager {
     private static final String TAG = "TaskManager";
     private static TaskManager instance;
-    private final DatabaseHelper dbHelper; // Field is final and initialized in constructor
+    private final DatabaseHelper dbHelper;
     private List<Task> tasks;
-    // Removed unused 'context' field, as dbHelper already holds the database connection
 
-    // Private constructor with Context for database operations
+
+
     private TaskManager(Context context) {
         // Use application context to prevent memory leaks
         this.dbHelper = new DatabaseHelper(context.getApplicationContext());
@@ -21,7 +21,7 @@ public class TaskManager {
         loadTasksFromDatabase();
     }
 
-    // Public static method to get instance with Context
+
     public static synchronized TaskManager getInstance(Context context) {
         if (instance == null) {
             instance = new TaskManager(context);
@@ -29,7 +29,7 @@ public class TaskManager {
         return instance;
     }
 
-    // Alternative getInstance without parameters (use only after initialization)
+
     public static TaskManager getInstance() {
         if (instance == null) {
             throw new IllegalStateException("TaskManager must be initialized first with getInstance(Context)");
@@ -44,7 +44,7 @@ public class TaskManager {
         return tasks;
     }
 
-    // FIX: Use the class field dbHelper and return the long ID.
+
     public long addTask(Task task) {
         if (dbHelper == null) {
             Log.e(TAG, "DatabaseHelper is null - cannot add task");
@@ -53,7 +53,7 @@ public class TaskManager {
 
         long id = dbHelper.addTask(task);
 
-        // Add to local list immediately if successful
+
         if (id != -1) {
             task.setId(id);
             tasks.add(task);
@@ -66,7 +66,7 @@ public class TaskManager {
         if (dbHelper != null && tasks != null) {
             dbHelper.deleteTask(task.getId());
 
-            // FIX: Use task ID for robust removal from local list
+
             tasks.removeIf(t -> t.getId() == task.getId());
 
             Log.d(TAG, "Task removed: " + task.getTitle());
@@ -125,7 +125,7 @@ public class TaskManager {
         return null;
     }
 
-    // Optional: Method to close database when needed
+
     public void close() {
         if (dbHelper != null) {
             dbHelper.close();

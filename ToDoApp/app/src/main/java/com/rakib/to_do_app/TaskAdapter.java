@@ -58,7 +58,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.txtPriority.setText(task.getPriority());
             holder.txtPriority.setVisibility(View.VISIBLE);
 
-            // Set priority background color based on priority level
+            // Setting priority background color based on priority level
             int priorityColor = getPriorityColor(holder.itemView.getContext(), task.getPriority());
             GradientDrawable priorityBg = new GradientDrawable();
             priorityBg.setColor(priorityColor);
@@ -103,18 +103,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 dotBg.setShape(GradientDrawable.OVAL);
                 dotBg.setColor(color);
 
-                // Set the size if needed, but the layout handles it primarily
+
                 // dotBg.setSize(16, 16);
 
                 holder.colorDot.setBackground(dotBg);
                 holder.colorDot.setVisibility(View.VISIBLE);
 
             } catch (IllegalArgumentException e) {
-                // Hide if color is invalid
+
                 holder.colorDot.setVisibility(View.GONE);
             }
         } else if (holder.colorDot != null) {
-            // Hide if no color tag is set
+
             holder.colorDot.setVisibility(View.GONE);
         }
 
@@ -122,7 +122,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.btnMore.setOnClickListener(v -> showPopupMenu(v, position, task.getStatus()));
     }
 
-    // Add this helper method to get priority colors
+
     private int getPriorityColor(Context context, String priority) {
         switch (priority.toLowerCase()) {
             case "high":
@@ -204,7 +204,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
         switch (sortBy.toLowerCase()) {
             case "date":
-                // Sort by Date (Requires Task.getDate() to be parsable, e.g., dd-MM-yyyy)
+                // Sort by Date
                 comparator = (t1, t2) -> {
                     try {
                         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
@@ -218,7 +218,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 break;
 
             case "priority":
-                // Sort by Priority: High (3) > Medium (2) > Low (1)
+                // Sorting via Priority: High > Medium  > Low
                 comparator = (t1, t2) -> {
                     int p1 = getPriorityValue(t1.getPriority());
                     int p2 = getPriorityValue(t2.getPriority());
@@ -227,7 +227,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 break;
 
             case "category":
-                // Sort alphabetically by category
+                // Sorting alphabetically by category
                 comparator = Comparator.comparing(Task::getCategory, Comparator.nullsLast(String::compareToIgnoreCase));
                 break;
 
@@ -255,7 +255,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView txtTitle, txtDescription, txtDate, txtCategory, txtTime, txtStatus, txtPriority;
         ImageView btnMore;
-        View colorDot; // FIXED: Added colorDot view
+        View colorDot; // Added colorDot view
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);

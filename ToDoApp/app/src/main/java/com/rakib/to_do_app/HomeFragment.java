@@ -185,7 +185,7 @@ public class HomeFragment extends Fragment {
 
 
     private void selectTab(Button selectedButton) {
-        // ... (existing selectTab logic) ...
+
         btnMyTasks.setBackgroundResource(R.drawable.btn_unselected);
         btnInProgress.setBackgroundResource(R.drawable.btn_unselected);
         btnCompleted.setBackgroundResource(R.drawable.btn_unselected);
@@ -210,7 +210,7 @@ public class HomeFragment extends Fragment {
         String status = currentTab;
         String query = currentSearchQuery.toLowerCase(Locale.getDefault());
 
-        // 1. Apply Status Filter
+        // 1. Applying Status Filter
         for (Task task : allTasks) {
             boolean statusMatches = status.equals("all") || (task.getStatus() != null && task.getStatus().equals(status));
             if (statusMatches) {
@@ -218,7 +218,7 @@ public class HomeFragment extends Fragment {
             }
         }
 
-        // 2. Apply Search Filter (by Category, as requested)
+        // 2. Apply Search Filter by Category
         if (!query.isEmpty()) {
             List<Task> searchFiltered = new ArrayList<>();
             for (Task task : filtered) {
@@ -231,12 +231,12 @@ public class HomeFragment extends Fragment {
 
         // 3. Apply Sorting
         if (taskAdapter != null) {
-            // Temporarily update the adapter with the filtered list for local sorting
+            // Temporarily updating the adapter with the filtered list for local sorting
             taskAdapter.updateList(filtered);
             taskAdapter.sortList(currentSortBy);
         }
 
-        // 4. Update Empty State
+        // 4. Updating Empty State
         if (filtered.isEmpty()) {
             recyclerTasks.setVisibility(View.GONE);
             txtEmptyState.setVisibility(View.VISIBLE);
