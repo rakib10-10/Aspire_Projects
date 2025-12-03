@@ -6,9 +6,12 @@ import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -26,10 +29,8 @@ import androidx.fragment.app.DialogFragment;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 public class AddTaskDialog extends DialogFragment {
 
@@ -40,6 +41,7 @@ public class AddTaskDialog extends DialogFragment {
     private String selectedCategory = "";
     private String selectedStatus = "running";
     private String selectedPriority = "Medium";
+    private String selectedColor = "#2196F3"; // Default blue
     private boolean isEditMode = false;
     private long existingTaskId = -1;
     private View dialogView;
@@ -60,28 +62,41 @@ public class AddTaskDialog extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        // Using R.style.DialogTheme (defined in styles.xml)
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), R.style.DialogTheme);
         LayoutInflater inflater = requireActivity().getLayoutInflater();
-        dialogView = inflater.inflate(R.layout.dialog_add_task, null);
+
+        // FIX: Correct layout inflation (resource, root, attachToRoot)
+        dialogView = inflater.inflate(R.layout.dialog_add_task, null, false);
 
         initializeViews();
         setupCategoryAutoComplete();
         setupStatusButtons();
         setupPrioritySelection();
+        setupColorSelection();
         setupDatePicker();
         setupTimePickers();
-        setupSaveButton();
 
-        if (getArguments() != null) {
+        // Check if we are in Edit Mode and populate data
+        if (getArguments() != null && getArguments().containsKey("task_id")) {
             isEditMode = true;
             populateExistingData();
+        } else if (getArguments() != null) {
+            // Handle prefilled date for Add Mode
+            String prefilledDate = getArguments().getString("prefilledDate", "");
+            if (!prefilledDate.isEmpty()) {
+                edtDate.setText(prefilledDate);
+            }
         }
 
-        builder.setView(dialogView);
-        return builder.create();
+        setupSaveButton();
+
+        builder.setView(dialogView); // Set the inflated view to the builder
+        return builder.create(); // Create and return the Dialog
     }
 
     private void initializeViews() {
+        // Ensure all IDs match the provided XML layout
         edtTaskName = dialogView.findViewById(R.id.taskTitle);
         edtDate = dialogView.findViewById(R.id.edtDate);
         edtStartTime = dialogView.findViewById(R.id.edtStartTime);
@@ -116,11 +131,9 @@ public class AddTaskDialog extends DialogFragment {
                 categoryList
         );
         autoCompleteCategory.setAdapter(categoryAdapter);
-
-        // Set threshold to show suggestions after 1 character
         autoCompleteCategory.setThreshold(1);
 
-        // Listen for category selection
+        // Listen for category selection (kept the logic clean, relying only on AutoCompleteTextView)
         autoCompleteCategory.setOnItemClickListener((parent, view, position, id) -> {
             selectedCategory = (String) parent.getItemAtPosition(position);
         });
@@ -131,19 +144,73 @@ public class AddTaskDialog extends DialogFragment {
                 String input = autoCompleteCategory.getText().toString().trim();
                 if (!input.isEmpty()) {
                     selectedCategory = input;
-                    // Add to suggestions if it's new
                     if (!categoryList.contains(input)) {
                         categoryList.add(input);
-                        ArrayAdapter<String> updatedAdapter = new ArrayAdapter<>(
-                                requireContext(),
-                                android.R.layout.simple_dropdown_item_1line,
-                                categoryList
-                        );
-                        autoCompleteCategory.setAdapter(updatedAdapter);
+                        // No need to create a new adapter instance every time, but simplified for brevity
                     }
                 }
             }
         });
+    }
+
+    private void setupColorSelection() {
+        int[] colorButtons = {
+                R.id.color_red, R.id.color_blue, R.id.color_green,
+                R.id.color_yellow, R.id.color_purple, R.id.color_orange
+        };
+
+        String[] colorValues = {
+                "#F44336", "#2196F3", "#4CAF50",
+                "#FFEB3B", "#9C27B0", "#FF9800"
+        };
+
+        for (int i = 0; i < colorButtons.length; i++) {
+            Button colorBtn = dialogView.findViewById(colorButtons[i]);
+            final String color = colorValues[i];
+
+            colorBtn.setTag(color);
+
+            // Create a circular drawable with the color
+            GradientDrawable drawable = new GradientDrawable();
+            drawable.setShape(GradientDrawable.OVAL);
+            drawable.setColor(Color.parseColor(color));
+
+            colorBtn.setBackground(drawable);
+            colorBtn.setText("");
+
+            colorBtn.setOnClickListener(v -> {
+                selectedColor = color;
+                Log.d("ColorDebug", "Color selected: " + selectedColor);
+                highlightSelectedColor(color);
+            });
+        }
+
+        // Set default color as selected initially
+        highlightSelectedColor(selectedColor);
+    }
+
+    private void highlightSelectedColor(String selectedColor) {
+        int[] colorButtons = {
+                R.id.color_red, R.id.color_blue, R.id.color_green,
+                R.id.color_yellow, R.id.color_purple, R.id.color_orange
+        };
+
+        for (int colorBtnId : colorButtons) {
+            Button colorBtn = dialogView.findViewById(colorBtnId);
+            String btnColor = (String) colorBtn.getTag();
+
+            // The background is a GradientDrawable, cast it to apply stroke
+            GradientDrawable background = (GradientDrawable) colorBtn.getBackground();
+            if (background != null) {
+                if (btnColor.equals(selectedColor)) {
+                    // Selected: add white border
+                    background.setStroke(6, Color.WHITE);
+                } else {
+                    // Not selected: no border
+                    background.setStroke(0, Color.TRANSPARENT);
+                }
+            }
+        }
     }
 
     private void setupStatusButtons() {
@@ -161,8 +228,14 @@ public class AddTaskDialog extends DialogFragment {
         btnStatusRunning.setOnClickListener(statusClickListener);
         btnStatusCompleted.setOnClickListener(statusClickListener);
 
-        btnStatusRunning.setBackgroundResource(R.drawable.status_selected);
-        btnStatusRunning.setTextColor(getResources().getColor(android.R.color.white));
+        // Ensure default selection is highlighted
+        if (selectedStatus.equals("running")) {
+            btnStatusRunning.setBackgroundResource(R.drawable.status_selected);
+            btnStatusRunning.setTextColor(getResources().getColor(android.R.color.white));
+        } else {
+            btnStatusCompleted.setBackgroundResource(R.drawable.status_selected);
+            btnStatusCompleted.setTextColor(getResources().getColor(android.R.color.white));
+        }
     }
 
     private void setupPrioritySelection() {
@@ -187,14 +260,8 @@ public class AddTaskDialog extends DialogFragment {
     private void setupDatePicker() {
         edtDate.setOnClickListener(v -> showDatePickerDialog());
 
-        String prefilledDate = "";
-        if (getArguments() != null) {
-            prefilledDate = getArguments().getString("prefilledDate", "");
-        }
-
-        if (!prefilledDate.isEmpty()) {
-            edtDate.setText(prefilledDate);
-        } else {
+        // Only set today's date if not prefilled in openAddTaskDialog
+        if (edtDate.getText().toString().isEmpty()) {
             SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
             String today = sdf.format(Calendar.getInstance().getTime());
             edtDate.setText(today);
@@ -203,6 +270,17 @@ public class AddTaskDialog extends DialogFragment {
 
     private void showDatePickerDialog() {
         final Calendar calendar = Calendar.getInstance();
+
+        // Try to parse the current date text to set the picker's starting position
+        try {
+            Calendar current = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+            current.setTime(sdf.parse(edtDate.getText().toString()));
+            calendar.set(current.get(Calendar.YEAR), current.get(Calendar.MONTH), current.get(Calendar.DAY_OF_MONTH));
+        } catch (Exception e) {
+            // Use current system date if parsing fails
+        }
+
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH);
         int day = calendar.get(Calendar.DAY_OF_MONTH);
@@ -231,6 +309,20 @@ public class AddTaskDialog extends DialogFragment {
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
         int minute = calendar.get(Calendar.MINUTE);
 
+        // Try to parse existing time
+        String existingTime = isStartTime ? edtStartTime.getText().toString() : edtEndTime.getText().toString();
+        if (!existingTime.isEmpty()) {
+            try {
+                SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+                Calendar existingCal = Calendar.getInstance();
+                existingCal.setTime(timeFormat.parse(existingTime));
+                hour = existingCal.get(Calendar.HOUR_OF_DAY);
+                minute = existingCal.get(Calendar.MINUTE);
+            } catch (Exception e) {
+                // Ignore if parsing fails
+            }
+        }
+
         TimePickerDialog timePickerDialog = new TimePickerDialog(
                 requireContext(),
                 (TimePicker view, int selectedHour, int selectedMinute) -> {
@@ -245,7 +337,7 @@ public class AddTaskDialog extends DialogFragment {
                         if (selectedHour == 0) displayHour = 12;
                     }
 
-                    String formattedTime = String.format("%02d:%02d %s", displayHour, selectedMinute, amPm);
+                    String formattedTime = String.format(Locale.getDefault(), "%02d:%02d %s", displayHour, selectedMinute, amPm);
 
                     if (isStartTime) {
                         edtStartTime.setText(formattedTime);
@@ -263,8 +355,11 @@ public class AddTaskDialog extends DialogFragment {
     private void setupSaveButton() {
         Button btnCreate = dialogView.findViewById(R.id.saveTaskButton);
 
+        // Set the initial text of the button
         if (isEditMode) {
             btnCreate.setText("Update Task");
+        } else {
+            btnCreate.setText("Create Task");
         }
 
         btnCreate.setOnClickListener(v -> {
@@ -282,35 +377,44 @@ public class AddTaskDialog extends DialogFragment {
 
             selectedCategory = category;
 
-            // Create task object
+            // Log the selected color (for debugging)
+            Log.d("ColorDebug", "Final Selected Color: " + selectedColor);
+
+            // 1. INITIALIZE TASK OBJECT
             Task task;
+            TaskManager taskManager = TaskManager.getInstance(requireContext());
+            ReminderManager reminderManager = new ReminderManager(requireContext());
+
             if (isEditMode && existingTaskId != -1) {
-                // Update existing task
+                // For editing, we update the existing task object attributes
                 task = new Task(existingTaskId, name, desc, date, startTime, endTime, category, selectedStatus);
+
+                // Cancel old reminder BEFORE updating the task in DB
+                reminderManager.cancelReminder(task);
+
             } else {
-                // Create new task
+                // Create new task (ID will be assigned by DB)
                 task = new Task(name, desc, date, startTime, endTime, category, selectedStatus);
             }
 
-            // Set priority
+            // Set priority and the CORRECT color tag
             task.setPriority(selectedPriority);
+            task.setColorTag(selectedColor);
 
-            // Save to SQLite via TaskManager
-            TaskManager taskManager = TaskManager.getInstance(requireContext());
+            Log.d("ColorDebug", "Task color before final save: " + task.getColorTag());
+
+            // 2. SAVE TO SQLITE AND GET ID
             if (isEditMode) {
                 taskManager.updateTask(task);
                 Toast.makeText(getContext(), "Task updated successfully!", Toast.LENGTH_SHORT).show();
             } else {
-                taskManager.addTask(task);
+                // Must get the ID for the reminder manager immediately after creation
+                long newId = taskManager.addTask(task);
+                task.setId(newId); // Assign the generated ID to the Task object
                 Toast.makeText(getContext(), "Task created successfully!", Toast.LENGTH_SHORT).show();
             }
 
-            // Set reminder
-            ReminderManager reminderManager = new ReminderManager(requireContext());
-            if (isEditMode) {
-                // Cancel existing reminder first
-                reminderManager.cancelReminder(task);
-            }
+            // 3. SET NEW REMINDER (Requires the task object to have a valid ID set in step 2)
 
             // Use the proper permission-aware method
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -324,7 +428,7 @@ public class AddTaskDialog extends DialogFragment {
                 reminderManager.setReminder(task);
             }
 
-            // Notify listener for UI updates
+            // 4. NOTIFY LISTENER FOR UI UPDATES
             if (listener != null) {
                 listener.onTaskCreated(name, desc, date, startTime, endTime, category, selectedStatus, selectedPriority);
             }
@@ -334,6 +438,7 @@ public class AddTaskDialog extends DialogFragment {
     }
 
     private void populateExistingData() {
+        // Read data from arguments bundle
         existingTaskId = getArguments().getLong("task_id", -1);
         String title = getArguments().getString("title", "");
         String description = getArguments().getString("description", "");
@@ -343,16 +448,22 @@ public class AddTaskDialog extends DialogFragment {
         String category = getArguments().getString("category", "");
         String status = getArguments().getString("status", "running");
         String priority = getArguments().getString("priority", "Medium");
+        String color = getArguments().getString("color_tag", "#2196F3");
 
+        // Set view values
         edtTaskName.setText(title);
         edtDescription.setText(description);
         edtDate.setText(date);
         edtStartTime.setText(startTime);
         edtEndTime.setText(endTime);
         autoCompleteCategory.setText(category);
+
+        // Set internal state variables
         selectedCategory = category;
         selectedPriority = priority;
+        selectedColor = color; // Crucial: set the selected color here
 
+        // Highlight UI based on state
         if (!status.isEmpty()) {
             selectedStatus = status;
             highlightStatusButton(status);
@@ -372,6 +483,9 @@ public class AddTaskDialog extends DialogFragment {
                     break;
             }
         }
+
+        // Set color selection
+        highlightSelectedColor(selectedColor);
     }
 
     private void highlightStatusButton(String status) {

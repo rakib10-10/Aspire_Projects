@@ -14,7 +14,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // Database Information
     private static final String DATABASE_NAME = "TodoApp.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     // Table Names
     private static final String TABLE_TASKS = "tasks";
@@ -34,9 +34,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_TASK_END_TIME = "end_time";
     private static final String KEY_TASK_CATEGORY = "category";
     private static final String KEY_TASK_STATUS = "status";
-
     private static final String KEY_TASK_PRIORITY = "priority";
-
+    private static final String KEY_TASK_COLOR_TAG = "color_tag";
 
     // User Profile Table - column names
     private static final String KEY_PROFILE_NAME = "name";
@@ -69,6 +68,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_TASK_CATEGORY + " TEXT,"
             + KEY_TASK_STATUS + " TEXT DEFAULT 'running',"
             + KEY_TASK_PRIORITY + " TEXT DEFAULT 'Medium',"
+            + KEY_TASK_COLOR_TAG + " TEXT DEFAULT '#2196F3',"
             + KEY_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP"
             + ")";
 
@@ -153,12 +153,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_TASK_CATEGORY, task.getCategory());
         values.put(KEY_TASK_STATUS, task.getStatus());
         values.put(KEY_TASK_PRIORITY, task.getPriority());
+        values.put(KEY_TASK_COLOR_TAG, task.getColorTag());
 
         long id = db.insert(TABLE_TASKS, null, values);
         db.close();
 
-        Log.d(TAG, "Task added with ID: " + id);
+        Log.d(TAG, "Task added. ID: " + id + ", Title: " + task.getTitle() + ", Color: " + task.getColorTag());
         return id;
+
     }
 
     public List<Task> getAllTasks() {
@@ -180,6 +182,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 task.setCategory(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_CATEGORY)));
                 task.setStatus(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_STATUS)));
                 task.setPriority(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_PRIORITY)));
+                task.setColorTag(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_COLOR_TAG)));
+
                 tasks.add(task);
             } while (cursor.moveToNext());
         }
@@ -200,6 +204,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_TASK_CATEGORY, task.getCategory());
         values.put(KEY_TASK_STATUS, task.getStatus());
         values.put(KEY_TASK_PRIORITY, task.getPriority());
+        values.put(KEY_TASK_COLOR_TAG, task.getColorTag()); // FIXED: Added color tag
 
         int rowsAffected = db.update(TABLE_TASKS, values, KEY_ID + " = ?",
                 new String[]{String.valueOf(task.getId())});

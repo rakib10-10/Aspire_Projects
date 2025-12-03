@@ -15,12 +15,20 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header: Title + Menu -->
+        <View
+            android:id="@+id/colorDot"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="end"
+            android:layout_marginBottom="-20dp"
+            android:background="@drawable/circle_shape"
+            android:layout_marginEnd="0dp" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:layout_marginTop="10dp">
 
             <TextView
                 android:id="@+id/taskTitleText"
@@ -44,7 +52,6 @@
                 android:padding="4dp" />
         </LinearLayout>
 
-        <!-- Description -->
         <TextView
             android:id="@+id/taskDescriptionText"
             android:layout_width="match_parent"
@@ -56,7 +63,6 @@
             android:maxLines="2"
             android:ellipsize="end" />
 
-        <!-- Details Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -64,7 +70,6 @@
             android:layout_marginTop="12dp"
             android:gravity="center_vertical">
 
-            <!-- Time -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -88,7 +93,6 @@
                     android:textColor="@color/primary_color" />
             </LinearLayout>
 
-            <!-- Date -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -113,7 +117,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Footer: Category + Status -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -121,16 +124,14 @@
             android:layout_marginTop="12dp"
             android:gravity="center_vertical">
 
-            <!-- Category -->
-
-                <TextView
-                    android:id="@+id/taskCategoryText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Coding"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/black" />
+            <TextView
+                android:id="@+id/taskCategoryText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Coding"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
 
 
             <View
@@ -138,13 +139,11 @@
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
-            <!-- Status -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp">
 

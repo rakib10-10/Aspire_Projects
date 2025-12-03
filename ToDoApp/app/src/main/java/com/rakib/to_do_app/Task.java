@@ -1,7 +1,5 @@
 package com.rakib.to_do_app;
 
-import android.widget.RadioGroup;
-
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -16,14 +14,16 @@ public class Task {
     private String category;
     private String status;
     private String priority;
-
+    private String colorTag;
 
     public Task() {
         this.id = System.currentTimeMillis();
         this.status = "running";
+        this.priority = "Medium";
+        this.colorTag = "#2196F3"; // Default blue color
     }
 
-    public Task(String title, String description, String date, String startTime, String endTime, String category, String priority) {
+    public Task(String title, String description, String date, String startTime, String endTime, String category, String status) {
         this.id = System.currentTimeMillis();
         this.title = title;
         this.description = description;
@@ -31,8 +31,9 @@ public class Task {
         this.startTime = startTime;
         this.endTime = endTime;
         this.category = category;
-        this.status = "running";
-        this.priority = priority;
+        this.status = status;
+        this.priority = "Medium";
+        this.colorTag = "#2196F3"; // Default blue color
     }
 
     public Task(long id, String title, String description, String date, String startTime, String endTime, String category, String status) {
@@ -44,6 +45,8 @@ public class Task {
         this.endTime = endTime;
         this.category = category;
         this.status = status;
+        this.priority = "Medium";
+        this.colorTag = "#2196F3"; // Default blue color
     }
 
     public Task(String title, String date) {
@@ -77,11 +80,11 @@ public class Task {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public String getPriority() { return priority; } // Add getter
-    public void setPriority(String priority) { this.priority = priority; } // Add setter
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
 
-
-
+    public String getColorTag() { return colorTag; }
+    public void setColorTag(String colorTag) { this.colorTag = colorTag; }
 
     public Date getDueDate() {
         try {
@@ -99,6 +102,7 @@ public class Task {
                 ", title='" + title + '\'' +
                 ", date='" + date + '\'' +
                 ", status='" + status + '\'' +
+                ", colorTag='" + colorTag + '\'' +
                 '}';
     }
 }

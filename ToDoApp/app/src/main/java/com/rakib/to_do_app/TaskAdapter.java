@@ -2,6 +2,7 @@ package com.rakib.to_do_app;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,8 +12,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
@@ -52,9 +60,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
             // Set priority background color based on priority level
             int priorityColor = getPriorityColor(holder.itemView.getContext(), task.getPriority());
-            holder.txtPriority.setBackgroundColor(priorityColor);
-
-            // Set text color to white for better visibility
+            GradientDrawable priorityBg = new GradientDrawable();
+            priorityBg.setColor(priorityColor);
+            priorityBg.setCornerRadius(16f);
+            holder.txtPriority.setBackground(priorityBg);
             holder.txtPriority.setTextColor(Color.WHITE);
         } else {
             holder.txtPriority.setVisibility(View.GONE);
@@ -83,6 +92,32 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         } else {
             holder.txtStatus.setVisibility(View.GONE);
         }
+
+
+        // Display Color Tag
+        if (task.getColorTag() != null && !task.getColorTag().isEmpty() && holder.colorDot != null) {
+            try {
+                int color = Color.parseColor(task.getColorTag());
+
+                GradientDrawable dotBg = new GradientDrawable();
+                dotBg.setShape(GradientDrawable.OVAL);
+                dotBg.setColor(color);
+
+                // Set the size if needed, but the layout handles it primarily
+                // dotBg.setSize(16, 16);
+
+                holder.colorDot.setBackground(dotBg);
+                holder.colorDot.setVisibility(View.VISIBLE);
+
+            } catch (IllegalArgumentException e) {
+                // Hide if color is invalid
+                holder.colorDot.setVisibility(View.GONE);
+            }
+        } else if (holder.colorDot != null) {
+            // Hide if no color tag is set
+            holder.colorDot.setVisibility(View.GONE);
+        }
+
 
         holder.btnMore.setOnClickListener(v -> showPopupMenu(v, position, task.getStatus()));
     }
@@ -162,10 +197,65 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
         return null;
     }
+    public void sortList(String sortBy) {
+        if (taskList.isEmpty()) return;
+
+        Comparator<Task> comparator;
+
+        switch (sortBy.toLowerCase()) {
+            case "date":
+                // Sort by Date (Requires Task.getDate() to be parsable, e.g., dd-MM-yyyy)
+                comparator = (t1, t2) -> {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
+                        Date d1 = sdf.parse(t1.getDate());
+                        Date d2 = sdf.parse(t2.getDate());
+                        return d1.compareTo(d2);
+                    } catch (Exception e) {
+                        return 0; // Don't sort if dates are invalid
+                    }
+                };
+                break;
+
+            case "priority":
+                // Sort by Priority: High (3) > Medium (2) > Low (1)
+                comparator = (t1, t2) -> {
+                    int p1 = getPriorityValue(t1.getPriority());
+                    int p2 = getPriorityValue(t2.getPriority());
+                    return Integer.compare(p2, p1); // p2, p1 for High to Low
+                };
+                break;
+
+            case "category":
+                // Sort alphabetically by category
+                comparator = Comparator.comparing(Task::getCategory, Comparator.nullsLast(String::compareToIgnoreCase));
+                break;
+
+            default:
+                // Default sort (e.g., by creation date/ID)
+                comparator = Comparator.comparing(Task::getId);
+                break;
+        }
+
+        Collections.sort(taskList, comparator);
+        notifyDataSetChanged();
+    }
+
+    // Helper method for Priority
+    private int getPriorityValue(String priority) {
+        if (priority == null) return 0;
+        switch (priority.toLowerCase()) {
+            case "high": return 3;
+            case "medium": return 2;
+            case "low": return 1;
+            default: return 0;
+        }
+    }
 
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView txtTitle, txtDescription, txtDate, txtCategory, txtTime, txtStatus, txtPriority;
         ImageView btnMore;
+        View colorDot; // FIXED: Added colorDot view
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -175,8 +265,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             txtCategory = itemView.findViewById(R.id.taskCategoryText);
             txtTime = itemView.findViewById(R.id.taskTimeText);
             txtStatus = itemView.findViewById(R.id.taskStatusText);
-            txtPriority = itemView.findViewById(R.id.txtPriority); // Make sure this ID exists in your layout
+            txtPriority = itemView.findViewById(R.id.txtPriority);
             btnMore = itemView.findViewById(R.id.btnMoreOptions);
+            colorDot = itemView.findViewById(R.id.colorDot); // FIXED: Initialize colorDot
         }
     }
 }

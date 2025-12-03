@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -86,7 +87,7 @@ public class CalendarFragment extends Fragment {
                 Task task = taskAdapter.getTaskAt(position);
                 if (task != null) {
                     task.setStatus(newStatus);
-                    TaskManager.getInstance().updateTask(task);
+                    TaskManager.getInstance(requireContext()).updateTask(task);
                     filterTasksByDate();
                     String statusText = newStatus.equals("running") ? "In Progress" : "Completed";
                     Toast.makeText(getContext(), "Task marked as " + statusText, Toast.LENGTH_SHORT).show();
@@ -142,6 +143,7 @@ public class CalendarFragment extends Fragment {
     }
 
     private void setupClickListeners() {
+        // This is correct: it calls the dialog method when the FAB is clicked
         btnAddTask.setOnClickListener(v -> openAddTaskDialog());
     }
 
@@ -174,20 +176,15 @@ public class CalendarFragment extends Fragment {
         dialog.setArguments(args);
 
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
+
+
             @Override
-            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) { // Add priority parameter
-                Task task = new Task(title, description, date, startTime, endTime, category, status);
-                task.setPriority(priority); // Set priority here
-
-                // Add to TaskManager (which handles Firestore)
-                TaskManager.getInstance().addTask(task);
-
-                // Set reminder
-                ReminderManager reminderManager = new ReminderManager(requireContext());
-                reminderManager.setReminder(task);
+            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
+                // FIX: Remove redundant save logic. The dialog now saves the task itself.
+                // We only need to refresh the list here.
 
                 // Refresh local list
-                taskList = TaskManager.getInstance().getTasks();
+                taskList = TaskManager.getInstance(requireContext()).getTasks();
                 filterTasksByDate();
 
                 Toast.makeText(requireContext(), "Task Added with reminder!", Toast.LENGTH_SHORT).show();
@@ -206,11 +203,11 @@ public class CalendarFragment extends Fragment {
                     ReminderManager reminderManager = new ReminderManager(getContext());
                     reminderManager.cancelReminder(task);
 
-                    // Remove from TaskManager (which handles Firestore)
-                    TaskManager.getInstance().removeTask(task);
+                    // Remove from TaskManager
+                    TaskManager.getInstance(requireContext()).removeTask(task);
 
                     // Refresh local list
-                    taskList = TaskManager.getInstance().getTasks();
+                    taskList = TaskManager.getInstance(requireContext()).getTasks();
                     filterTasksByDate();
 
                     Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
@@ -223,6 +220,8 @@ public class CalendarFragment extends Fragment {
         AddTaskDialog dialog = new AddTaskDialog();
 
         Bundle args = new Bundle();
+        // Pass task ID for update query
+        args.putLong("task_id", task.getId());
         args.putString("title", task.getTitle());
         args.putString("description", task.getDescription());
         args.putString("date", task.getDate());
@@ -230,34 +229,18 @@ public class CalendarFragment extends Fragment {
         args.putString("endTime", task.getEndTime());
         args.putString("category", task.getCategory());
         args.putString("status", task.getStatus());
-        args.putString("priority", task.getPriority()); // Add priority to bundle
+        args.putString("priority", task.getPriority());
+        args.putString("color_tag", task.getColorTag());
         dialog.setArguments(args);
 
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
-            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) { // Add priority parameter
-                // Cancel old reminder
-                ReminderManager reminderManager = new ReminderManager(requireContext());
-                reminderManager.cancelReminder(task);
-
-                // Update task
-                task.setTitle(title);
-                task.setDescription(description);
-                task.setDate(date);
-                task.setStartTime(startTime);
-                task.setEndTime(endTime);
-                task.setCategory(category);
-                task.setStatus(status);
-                task.setPriority(priority); // Set priority here
-
-                // Update in TaskManager (which handles Firestore)
-                TaskManager.getInstance().updateTask(task);
-
-                // Set new reminder
-                reminderManager.setReminder(task);
+            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
+                // FIX: Remove redundant update logic. The dialog now updates the task itself.
+                // We only need to refresh the list here.
 
                 // Refresh local list
-                taskList = TaskManager.getInstance().getTasks();
+                taskList = TaskManager.getInstance(requireContext()).getTasks();
                 filterTasksByDate();
 
                 Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();
@@ -294,7 +277,7 @@ public class CalendarFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // Refresh tasks from TaskManager
-        taskList = TaskManager.getInstance().getTasks();
+        taskList = TaskManager.getInstance(requireContext()).getTasks();
         filterTasksByDate();
     }
 }

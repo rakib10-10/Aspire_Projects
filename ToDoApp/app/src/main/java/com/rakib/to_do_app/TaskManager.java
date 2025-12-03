@@ -7,12 +7,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TaskManager {
+    private static final String TAG = "TaskManager";
     private static TaskManager instance;
-    private DatabaseHelper dbHelper;
+    private final DatabaseHelper dbHelper; // Field is final and initialized in constructor
     private List<Task> tasks;
+    // Removed unused 'context' field, as dbHelper already holds the database connection
 
     // Private constructor with Context for database operations
     private TaskManager(Context context) {
+        // Use application context to prevent memory leaks
         this.dbHelper = new DatabaseHelper(context.getApplicationContext());
         this.tasks = new ArrayList<>();
         loadTasksFromDatabase();
@@ -41,28 +44,34 @@ public class TaskManager {
         return tasks;
     }
 
-    public void addTask(Task task) {
-        if (dbHelper != null) {
-            long taskId = dbHelper.addTask(task);
-            task.setId(taskId);
-
-            if (tasks == null) {
-                tasks = new ArrayList<>();
-            }
-            tasks.add(0, task); // Add to beginning for newest first
-            Log.d("TaskManager", "Task added: " + task.getTitle());
-        } else {
-            Log.e("TaskManager", "DatabaseHelper is null - cannot add task");
+    // FIX: Use the class field dbHelper and return the long ID.
+    public long addTask(Task task) {
+        if (dbHelper == null) {
+            Log.e(TAG, "DatabaseHelper is null - cannot add task");
+            return -1;
         }
+
+        long id = dbHelper.addTask(task);
+
+        // Add to local list immediately if successful
+        if (id != -1) {
+            task.setId(id);
+            tasks.add(task);
+            Log.d(TAG, "Task added with ID: " + id);
+        }
+        return id;
     }
 
     public void removeTask(Task task) {
         if (dbHelper != null && tasks != null) {
             dbHelper.deleteTask(task.getId());
-            tasks.remove(task);
-            Log.d("TaskManager", "Task removed: " + task.getTitle());
+
+            // FIX: Use task ID for robust removal from local list
+            tasks.removeIf(t -> t.getId() == task.getId());
+
+            Log.d(TAG, "Task removed: " + task.getTitle());
         } else {
-            Log.e("TaskManager", "DatabaseHelper or tasks list is null - cannot remove task");
+            Log.e(TAG, "DatabaseHelper or tasks list is null - cannot remove task");
         }
     }
 
@@ -78,9 +87,9 @@ public class TaskManager {
                     break;
                 }
             }
-            Log.d("TaskManager", "Task updated: " + updatedTask.getTitle());
+            Log.d(TAG, "Task updated: " + updatedTask.getTitle());
         } else {
-            Log.e("TaskManager", "DatabaseHelper or tasks list is null - cannot update task");
+            Log.e(TAG, "DatabaseHelper or tasks list is null - cannot update task");
         }
     }
 
@@ -95,9 +104,9 @@ public class TaskManager {
             if (databaseTasks != null) {
                 tasks.addAll(databaseTasks);
             }
-            Log.d("TaskManager", "Tasks loaded from database: " + tasks.size());
+            Log.d(TAG, "Tasks loaded from database: " + tasks.size());
         } else {
-            Log.e("TaskManager", "DatabaseHelper is null - cannot load tasks");
+            Log.e(TAG, "DatabaseHelper is null - cannot load tasks");
         }
     }
 
