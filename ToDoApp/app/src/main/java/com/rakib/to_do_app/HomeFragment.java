@@ -1,8 +1,10 @@
 package com.rakib.to_do_app;
 
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat; // <-- NEW IMPORT
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,11 +33,11 @@ public class HomeFragment extends Fragment {
     private TaskAdapter taskAdapter;
     private List<Task> allTasks = new ArrayList<>();
     private String currentTab = "all";
-    private String currentSearchQuery = ""; // New field for search
-    private String currentSortBy = "date"; // New field for sorting
+    private String currentSearchQuery = "";
+    private String currentSortBy = "date";
     private TaskManager taskManager;
-    private SearchView searchTaskCategory; // New field for SearchView
-    private ImageButton btnSort; // New field for sort button
+    private SearchView searchTaskCategory;
+    private ImageButton btnSort;
 
     public HomeFragment() {
         // Required empty public constructor
@@ -51,7 +53,7 @@ public class HomeFragment extends Fragment {
         initializeViews(view);
         setupTaskAdapter();
         setupClickListeners();
-        setupSearchAndSort(); // New setup method
+        setupSearchAndSort();
         loadTasks();
 
         return view;
@@ -63,8 +65,8 @@ public class HomeFragment extends Fragment {
         btnCompleted = view.findViewById(R.id.btnCompleted);
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
         txtEmptyState = view.findViewById(R.id.txtEmptyState);
-        searchTaskCategory = view.findViewById(R.id.searchTaskCategory); // Initialize SearchView
-        btnSort = view.findViewById(R.id.btnSort); // Initialize Sort Button
+        searchTaskCategory = view.findViewById(R.id.searchTaskCategory);
+        btnSort = view.findViewById(R.id.btnSort);
     }
 
     private void setupTaskAdapter() {
@@ -81,14 +83,11 @@ public class HomeFragment extends Fragment {
             public void onTaskDelete(int position) {
                 Task task = taskAdapter.getTaskAt(position);
                 if (task != null) {
-                    // Cancel reminder first
                     ReminderManager reminderManager = new ReminderManager(requireContext());
                     reminderManager.cancelReminder(task);
-
-                    // Then remove from TaskManager (SQLite)
                     taskManager.removeTask(task);
                     allTasks.remove(task);
-                    filterAndSortTasks(); // Use combined filter/sort
+                    filterAndSortTasks();
                     Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -99,7 +98,7 @@ public class HomeFragment extends Fragment {
                 if (task != null) {
                     task.setStatus(newStatus);
                     taskManager.updateTask(task);
-                    filterAndSortTasks(); // Use combined filter/sort
+                    filterAndSortTasks();
                     String statusText = newStatus.equals("running") ? "In Progress" : "Completed";
                     Toast.makeText(getContext(), "Task marked as " + statusText, Toast.LENGTH_SHORT).show();
                 }
@@ -111,7 +110,6 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // Tab button listeners remain mostly the same, now they call the combined filter
         btnMyTasks.setOnClickListener(v -> {
             selectTab(btnMyTasks);
             currentTab = "all";
@@ -183,28 +181,35 @@ public class HomeFragment extends Fragment {
         popup.show();
     }
 
-
+    /**
+     * FIX: Updated method to use theme-aware drawables and color state lists
+     * instead of hardcoded colors, ensuring Day/Night mode compatibility.
+     */
     private void selectTab(Button selectedButton) {
 
-        btnMyTasks.setBackgroundResource(R.drawable.btn_unselected);
-        btnInProgress.setBackgroundResource(R.drawable.btn_unselected);
-        btnCompleted.setBackgroundResource(R.drawable.btn_unselected);
+        // --- 1. Get Color State List for Text ---
+        // This selector defines text color contrast (e.g., primary color when selected,
+        // or the default colorOnSurface otherwise).
+        ColorStateList textColors = ContextCompat.getColorStateList(requireContext(), R.color.btn_text_color_selector);
 
-        btnMyTasks.setTextColor(getResources().getColor(android.R.color.black));
-        btnInProgress.setTextColor(getResources().getColor(android.R.color.black));
-        btnCompleted.setTextColor(getResources().getColor(android.R.color.black));
+        // --- 2. Reset All Buttons to Unselected State ---
+        Button[] allButtons = {btnMyTasks, btnInProgress, btnCompleted};
+        for (Button button : allButtons) {
+            button.setBackgroundResource(R.drawable.btn_unselected);
+            button.setTextColor(textColors); // Set text color using selector
+        }
 
+        // --- 3. Set Selected Button State ---
         selectedButton.setBackgroundResource(R.drawable.btn_selected);
-        selectedButton.setTextColor(getResources().getColor(android.R.color.black));
+        // Note: The text color is already handled by the selector, which defaults to
+        // the selected state color when btn_selected (solid color) is applied.
     }
 
     private void loadTasks() {
-        // Load the freshest list from the database
         allTasks = taskManager.getTasks();
         filterAndSortTasks();
     }
 
-    // NEW COMBINED FILTER AND SORT METHOD
     private void filterAndSortTasks() {
         List<Task> filtered = new ArrayList<>();
         String status = currentTab;
@@ -231,7 +236,6 @@ public class HomeFragment extends Fragment {
 
         // 3. Apply Sorting
         if (taskAdapter != null) {
-            // Temporarily updating the adapter with the filtered list for local sorting
             taskAdapter.updateList(filtered);
             taskAdapter.sortList(currentSortBy);
         }
@@ -262,7 +266,6 @@ public class HomeFragment extends Fragment {
     }
 
     private void openEditTaskDialog(Task task) {
-        // ... (existing openEditTaskDialog logic remains, ensure it calls loadTasks() on creation) ...
         AddTaskDialog dialog = new AddTaskDialog();
 
         Bundle args = new Bundle();
@@ -279,11 +282,9 @@ public class HomeFragment extends Fragment {
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-                // Cancel old reminder
                 ReminderManager reminderManager = new ReminderManager(requireContext());
                 reminderManager.cancelReminder(task);
 
-                // Update task
                 task.setTitle(title);
                 task.setDescription(description);
                 task.setDate(date);
@@ -293,13 +294,8 @@ public class HomeFragment extends Fragment {
                 task.setStatus(status);
                 task.setPriority(priority);
 
-                // Update in TaskManager
                 taskManager.updateTask(task);
-
-                // Set new reminder
                 reminderManager.setReminder(task);
-
-                // Refresh local list
                 loadTasks();
 
                 Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();

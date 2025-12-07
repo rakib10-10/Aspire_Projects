@@ -6,6 +6,7 @@ public class NotificationSettings {
     private boolean dailySummaryEnabled;
     private String defaultReminderTime;
     private String notificationSound;
+    private boolean darkModeEnabled;
 
     public NotificationSettings() {
         // Default values
@@ -14,6 +15,7 @@ public class NotificationSettings {
         this.dailySummaryEnabled = false;
         this.defaultReminderTime = "15 minutes before";
         this.notificationSound = "Default";
+
     }
 
     // Getters and Setters
@@ -40,5 +42,12 @@ public class NotificationSettings {
     public String getNotificationSound() { return notificationSound; }
     public void setNotificationSound(String notificationSound) {
         this.notificationSound = notificationSound;
+    }
+    public boolean isDarkModeEnabled() {
+        return darkModeEnabled;
+    }
+
+    public void setDarkModeEnabled(boolean darkModeEnabled) {
+        this.darkModeEnabled = darkModeEnabled;
     }
 }

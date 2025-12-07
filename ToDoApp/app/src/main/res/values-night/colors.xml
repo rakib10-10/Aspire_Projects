@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_color">#64B5F6</color>
+    <color name="primary_dark">#2196F3</color>
+    <color name="accent_color">#FF80AB</color>
+    <color name="green">#81C784</color>
+    <color name="red">#E57373</color>
+
+    <color name="theme_background_color">#121212</color>
+    <color name="theme_surface_color">#1E1E1E</color>
+    <color name="theme_text_primary">#FFFFFF</color>
+    <color name="theme_text_secondary">#B0BEC5</color>
+    <color name="theme_outline_color">#424242</color>
+    <color name="error">#CF6679</color>
+
+    <color name="black">#FFFFFF</color>
+    <color name="white">#000000</color>
+    <color name="gray_dark">#B0BEC5</color>
+    <color name="transparent">#00000000</color>
+    <color name="background_gray">#121212</color>
+
+    <color name="status_in_progress">#FBC02D</color>
+    <color name="status_completed">#81C784</color>
+    <color name="status_pending">#9E9E9E</color>
+    <color name="status_cancelled">#E57373</color>
+
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0BEC5</color>
+    <color name="text_tertiary">#9CA3AF</color>
+    <color name="text_inverse">#000000</color>
+
+    <color name="priority_low">#81C784</color>
+    <color name="priority_medium">#FFB74D</color>
+    <color name="priority_high">#E57373</color>
+    <color name="priority_default">#64B5F6</color>
+
+    <color name="category_design">#A594F9</color>
+    <color name="category_meeting">#64B5F6</color>
+    <color name="category_coding">#4DB6AC</color>
+    <color name="category_learning">#FFB74D</color>
+    <color name="category_testing">#F06292</color>
+    <color name="category_quick_call">#A1887F</color>
+
+</resources>

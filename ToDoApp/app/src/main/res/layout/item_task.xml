@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     app:cardCornerRadius="12dp"
     app:cardElevation="1dp"
-    app:cardBackgroundColor="@color/white"
+    app:cardBackgroundColor="?attr/colorSurface"
     android:layout_marginVertical="4dp"
     android:layout_marginHorizontal="8dp">
 
@@ -38,7 +38,7 @@
                 android:text="Task Title"
                 android:textStyle="bold"
                 android:textSize="16sp"
-                android:textColor="@android:color/black"
+                android:textColor="?attr/colorOnSurface"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
@@ -48,7 +48,7 @@
                 android:layout_height="24dp"
                 android:src="@drawable/outline_arrow_drop_down_24"
                 android:contentDescription="More options"
-                app:tint="@color/gray_dark"
+                app:tint="?attr/colorOnSurfaceVariant"
                 android:padding="4dp" />
         </LinearLayout>
 
@@ -58,7 +58,7 @@
             android:layout_height="wrap_content"
             android:text="Task description will appear here..."
             android:textSize="14sp"
-            android:textColor="@color/gray_dark"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:layout_marginTop="8dp"
             android:maxLines="2"
             android:ellipsize="end" />
@@ -81,7 +81,7 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/outline_calendar_clock_24"
-                    app:tint="@color/primary_color"
+                    app:tint="?attr/colorPrimary"
                     android:layout_marginEnd="4dp" />
 
                 <TextView
@@ -90,7 +90,7 @@
                     android:layout_height="wrap_content"
                     android:text="10:00 AM - 11:00 AM"
                     android:textSize="12sp"
-                    android:textColor="@color/primary_color" />
+                    android:textColor="?attr/colorPrimary" />
             </LinearLayout>
 
             <LinearLayout
@@ -104,7 +104,7 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/outline_calendar_month_24"
-                    app:tint="@color/gray_dark"
+                    app:tint="?attr/colorOnSurfaceVariant"
                     android:layout_marginEnd="4dp" />
 
                 <TextView
@@ -113,7 +113,7 @@
                     android:layout_height="wrap_content"
                     android:text="18 Oct 2025"
                     android:textSize="12sp"
-                    android:textColor="@color/gray_dark" />
+                    android:textColor="?attr/colorOnSurfaceVariant" />
             </LinearLayout>
         </LinearLayout>
 
@@ -131,7 +131,7 @@
                 android:text="Coding"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="@color/black" />
+                android:textColor="?attr/colorOnSurface" />
 
 
             <View
@@ -155,7 +155,7 @@
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:textAllCaps="true"
-                    android:textColor="@color/white" />
+                    android:textColor="?attr/colorOnPrimary" />
 
             </LinearLayout>
 
@@ -172,7 +172,7 @@
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
             android:background="@drawable/priority_background"
-            android:textColor="@color/white" />
+            android:textColor="?attr/colorOnPrimary" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

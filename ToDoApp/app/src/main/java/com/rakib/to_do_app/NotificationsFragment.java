@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -41,22 +42,22 @@ public class NotificationsFragment extends Fragment {
     private NotificationAdapter notificationAdapter;
     private List<NotificationItem> notificationList;
 
-
+    // Database
     private DatabaseHelper dbHelper;
 
-
+    // FIX: Activity Result Launcher for Ringtone Picker
     private ActivityResultLauncher<Intent> ringtonePickerLauncher;
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-         View view = inflater.inflate(R.layout.activity_notifications, container, false);
+        View view = inflater.inflate(R.layout.activity_notifications, container, false);
 
         dbHelper = new DatabaseHelper(requireContext());
 
         initializeViews(view);
-        setupRingtonePickerLauncher(); // launcher set up
+        setupRingtonePickerLauncher();
         setupSpinners();
         setupSwitches();
         setupRecyclerView();
@@ -73,7 +74,7 @@ public class NotificationsFragment extends Fragment {
         switchDueDateAlerts = view.findViewById(R.id.switch_due_date_alerts);
         switchDailySummary = view.findViewById(R.id.switch_daily_summary);
 
-        // Initializing the Dark Theme Switch
+        // Initialize Dark Theme Switch
         switchDarkTheme = view.findViewById(R.id.switch_dark_theme);
 
         spinnerReminderTime = view.findViewById(R.id.spinner_reminder_time);
@@ -87,7 +88,7 @@ public class NotificationsFragment extends Fragment {
         Log.d(TAG, "All views initialized successfully");
     }
 
-    // Implementing the Ringtone Picker Launcher setup
+    // FIX: Implement the Ringtone Picker Launcher setup
     private void setupRingtonePickerLauncher() {
         ringtonePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -95,16 +96,17 @@ public class NotificationsFragment extends Fragment {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         Uri uri = result.getData().getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
                         if (uri != null) {
-                            // Storing the URI as a string
+                            // FIX: Store the URI as a string
                             String uriString = uri.toString();
                             saveNotificationSetting("notificationSound", uriString);
 
+                            // FIX: Update the display name in the Spinner (e.g., switch to a custom name)
                             setSpinnerSelection(spinnerNotificationSound, uriString);
 
                             Toast.makeText(requireContext(), "Custom sound set!", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-
+                        // If picker was cancelled, revert the spinner to the previously saved setting
                         loadNotificationSettings();
                     }
                 }
@@ -150,7 +152,7 @@ public class NotificationsFragment extends Fragment {
                 String selectedSound = parent.getItemAtPosition(position).toString();
 
                 if (selectedSound.equals("Custom...")) {
-                    // Launch the Ringtone Picker using the launcher
+                    // FIX: Launch the Ringtone Picker using the launcher
                     Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
                     intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION);
                     intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Notification Sound");
@@ -192,10 +194,38 @@ public class NotificationsFragment extends Fragment {
             Log.d(TAG, "Daily summary: " + (isChecked ? "enabled" : "disabled"));
         });
 
-
+        // DARK THEME SWITCH - FIXED VERSION
         if (switchDarkTheme != null) {
+            // First, set the switch state based on saved preference from database
+            boolean isDarkModeEnabled = dbHelper.isDarkModeEnabled();
+            switchDarkTheme.setChecked(isDarkModeEnabled);
+
+            // Remove any existing listeners to avoid triggering on setChecked
+            switchDarkTheme.setOnCheckedChangeListener(null);
+
+            // Set the new listener
             switchDarkTheme.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                Toast.makeText(requireContext(), "Dark Mode is " + (isChecked ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
+                // Save to database using the direct method
+                dbHelper.setDarkModeEnabled(isChecked);
+
+                // Also update via the notification setting method (for consistency)
+                saveNotificationSetting("dark_mode_enabled", isChecked);
+
+                // Apply theme change
+                int mode = isChecked ?
+                        AppCompatDelegate.MODE_NIGHT_YES :
+                        AppCompatDelegate.MODE_NIGHT_NO;
+
+                AppCompatDelegate.setDefaultNightMode(mode);
+
+                // Restart activity to apply theme immediately
+                requireActivity().recreate();
+
+                Toast.makeText(requireContext(),
+                        "Dark Mode " + (isChecked ? "enabled" : "disabled"),
+                        Toast.LENGTH_SHORT).show();
+
+                Log.d(TAG, "Dark mode preference saved to DB: " + isChecked);
             });
         }
     }
@@ -214,7 +244,33 @@ public class NotificationsFragment extends Fragment {
         switchDueDateAlerts.setChecked(settings.isDueDateAlertsEnabled());
         switchDailySummary.setChecked(settings.isDailySummaryEnabled());
 
+        // Load Dark Mode preference from database
+        if (switchDarkTheme != null) {
+            // IMPORTANT: Remove listener before setting checked state
+            switchDarkTheme.setOnCheckedChangeListener(null);
 
+            boolean isDarkModeEnabled = settings.isDarkModeEnabled();
+            switchDarkTheme.setChecked(isDarkModeEnabled);
+            Log.d(TAG, "Dark mode loaded from DB: " + isDarkModeEnabled);
+
+            // Re-attach the listener after setting the initial state
+            switchDarkTheme.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                dbHelper.setDarkModeEnabled(isChecked);
+                saveNotificationSetting("dark_mode_enabled", isChecked);
+
+                int mode = isChecked ?
+                        AppCompatDelegate.MODE_NIGHT_YES :
+                        AppCompatDelegate.MODE_NIGHT_NO;
+                AppCompatDelegate.setDefaultNightMode(mode);
+                requireActivity().recreate();
+
+                Toast.makeText(requireContext(),
+                        "Dark Mode " + (isChecked ? "enabled" : "disabled"),
+                        Toast.LENGTH_SHORT).show();
+
+                Log.d(TAG, "Dark mode preference saved to DB: " + isChecked);
+            });
+        }
 
         setSpinnerSelection(spinnerReminderTime, settings.getDefaultReminderTime());
         setSpinnerSelection(spinnerNotificationSound, settings.getNotificationSound());
@@ -222,8 +278,9 @@ public class NotificationsFragment extends Fragment {
         Log.d(TAG, "Notification settings loaded successfully");
     }
 
-    //spinner option
-
+    /**
+     * FIX: Updated setSpinnerSelection to handle custom URI strings by matching them directly.
+     */
     private void setSpinnerSelection(Spinner spinner, String value) {
         if (spinner.getAdapter() != null && value != null) {
             ArrayAdapter adapter = (ArrayAdapter) spinner.getAdapter();
@@ -232,13 +289,15 @@ public class NotificationsFragment extends Fragment {
 
                 // If value is a standard name OR a custom URI, match it directly
                 if (item.equalsIgnoreCase(value) || value.startsWith("content://")) {
+                    // For custom URIs, we don't have the original name, so just mark it as selected
+                    // by choosing the last item (assuming "Custom..." is the last one if you updated arrays.xml).
                     if (value.startsWith("content://")) {
-                        // Check if "Custom" is an option before setting it
+                        // Check if "Custom..." is an option before setting it
                         if (item.equals("Custom...")) {
                             spinner.setSelection(i);
                             return;
                         } else {
-                            continue;
+                            continue; // Keep looking for "Custom..." or standard items
                         }
                     }
 
@@ -252,7 +311,7 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void saveNotificationSetting(String key, Object value) {
-        // Mapping the old key names to new database column names
+        // Map the old key names to new database column names
         String databaseKey;
         switch (key) {
             case "defaultReminderTime":
@@ -269,6 +328,9 @@ public class NotificationsFragment extends Fragment {
                 break;
             case "dailySummaryEnabled":
                 databaseKey = "daily_summary_enabled";
+                break;
+            case "dark_mode_enabled": // ADDED: Dark mode key mapping
+                databaseKey = "dark_mode_enabled";
                 break;
             default:
                 databaseKey = key;

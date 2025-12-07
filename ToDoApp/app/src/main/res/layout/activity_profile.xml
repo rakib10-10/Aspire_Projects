@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
+    android:background="?android:attr/colorBackground"
     android:fillViewport="true">
 
     <LinearLayout
@@ -11,79 +11,71 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-
             android:padding="24dp">
 
-            <!-- Profile Picture -->
             <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center">
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="16dp">
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/iv_profile_picture"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:layout_alignParentStart="true"
-                    android:layout_alignParentEnd="true"
-                    android:layout_marginStart="122dp"
-                    android:layout_marginEnd="122dp"
-                    android:contentDescription="Profile picture"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:src="@drawable/outline_account_circle_24"
-                    app:civ_border_color="@color/white"
+                    android:contentDescription="Profile picture"
+                    app:civ_border_color="?attr/colorSurface"
                     app:civ_border_width="4dp" />
 
-                <!-- Edit Profile Picture Button -->
-                <ImageButton
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btn_edit_photo"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentBottom="true"
-                    android:background="@drawable/circle_background_accent"
-                    android:padding="8dp"
+                    android:scaleType="centerInside"
                     android:src="@drawable/ic_edit_white"
-                    android:contentDescription="Edit profile picture" />
-
+                    android:contentDescription="Edit profile picture"
+                    app:fabCustomSize="36dp"
+                    app:maxImageSize="20dp"
+                    app:tint="?attr/colorOnPrimary"
+                    app:backgroundTint="?attr/colorPrimary" />
             </RelativeLayout>
 
-            <!-- User Name -->
             <TextView
                 android:id="@+id/tv_user_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:gravity="center"
                 android:text="Rakib Bhuiyan"
-                android:textColor="@color/black"
+                android:textColor="?attr/colorOnBackground"
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <!-- User Email -->
             <TextView
                 android:id="@+id/tv_user_email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="mdtara0199@gmail.com"
-                android:textColor="@color/black"
+
                 android:textSize="16sp"
                 android:alpha="0.8" />
 
         </LinearLayout>
 
-        <!-- Profile Information Card -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp"
+            app:cardBackgroundColor="?attr/colorSurface"
             app:cardUseCompatPadding="true">
 
             <LinearLayout
@@ -96,11 +88,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Personal Information"
-                    android:textColor="@color/text_primary"
+                    android:textColor="?attr/colorOnSurface"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <!-- Full Name -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -111,18 +102,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Name"
-                        android:textColor="@color/text_secondary"
                         android:textSize="14sp" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        app:boxBackgroundMode="outline"
-                        app:boxCornerRadiusBottomEnd="8dp"
-                        app:boxCornerRadiusBottomStart="8dp"
-                        app:boxCornerRadiusTopEnd="8dp"
-                        app:boxCornerRadiusTopStart="8dp">
+                        app:boxBackgroundMode="outline">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_full_name"
@@ -134,7 +120,6 @@
 
                 </LinearLayout>
 
-                <!-- Email -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -145,18 +130,14 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Email Address"
-                        android:textColor="@color/text_secondary"
+
                         android:textSize="14sp" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        app:boxBackgroundMode="outline"
-                        app:boxCornerRadiusBottomEnd="8dp"
-                        app:boxCornerRadiusBottomStart="8dp"
-                        app:boxCornerRadiusTopEnd="8dp"
-                        app:boxCornerRadiusTopStart="8dp">
+                        app:boxBackgroundMode="outline">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_email"
@@ -169,7 +150,6 @@
 
                 </LinearLayout>
 
-                <!-- Phone Number -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -180,24 +160,19 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Phone Number"
-                        android:textColor="@color/text_secondary"
+
                         android:textSize="14sp" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        app:boxBackgroundMode="outline"
-                        app:boxCornerRadiusBottomEnd="8dp"
-                        app:boxCornerRadiusBottomStart="8dp"
-                        app:boxCornerRadiusTopEnd="8dp"
-                        app:boxCornerRadiusTopStart="8dp">
+                        app:boxBackgroundMode="outline">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_phone"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-
                             android:inputType="phone"
                             android:text="+1 234 567 8900" />
 
@@ -205,7 +180,6 @@
 
                 </LinearLayout>
 
-                <!-- Bio -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -216,25 +190,20 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Bio"
-                        android:textColor="@color/text_secondary"
+
                         android:textSize="14sp" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        app:boxBackgroundMode="outline"
-                        app:boxCornerRadiusBottomEnd="8dp"
-                        app:boxCornerRadiusBottomStart="8dp"
-                        app:boxCornerRadiusTopEnd="8dp"
-                        app:boxCornerRadiusTopStart="8dp">
+                        app:boxBackgroundMode="outline">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_bio"
                             android:layout_width="match_parent"
                             android:layout_height="120dp"
                             android:gravity="top"
-
                             android:inputType="textMultiLine"
                             android:lines="4"
                             android:text="Passionate about productivity and task management. Love creating efficient workflows!" />
@@ -245,10 +214,9 @@
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
 
-        <!-- Action Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -256,73 +224,72 @@
             android:layout_margin="16dp"
             android:gravity="center">
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_save_profile"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@color/primary_color"
                 android:layout_marginEnd="8dp"
                 android:text="Save Changes"
-                android:textColor="@color/white"
-
+                app:backgroundTint="?attr/colorPrimary"
+                android:textColor="?attr/colorOnPrimary"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:padding="16dp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_cancel"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
                 android:text="Cancel"
-                android:textColor="@color/text_secondary"
-                android:background="@drawable/button_outline"
+
+
                 android:textSize="16sp"
                 android:padding="16dp" />
 
         </LinearLayout>
 
-        <!-- Additional Options -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_margin="16dp"
-            android:layout_marginTop="0dp">
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_change_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Change Password"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
 
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                style="@style/Widget.Material3.Button.TextButton" />
+                android:insetBottom="0dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_privacy_settings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Privacy Settings"
-
+                style="@style/Widget.MaterialComponents.Button.TextButton"
 
                 android:insetTop="0dp"
-                android:insetBottom="0dp"
-                style="@style/Widget.Material3.Button.TextButton" />
+                android:insetBottom="0dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_logout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Logout"
-                android:textColor="@color/error"
-                android:backgroundTint="@color/transparent"
+                android:textColor="?attr/colorError"
+                app:rippleColor="?attr/colorError"
+                android:backgroundTint="@android:color/transparent"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                style="@style/Widget.Material3.Button.TextButton" />
+                style="@style/Widget.MaterialComponents.Button.TextButton" />
 
         </LinearLayout>
 

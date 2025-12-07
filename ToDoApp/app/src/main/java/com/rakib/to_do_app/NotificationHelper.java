@@ -14,7 +14,7 @@ public class NotificationHelper {
     private static final String CHANNEL_ID = "todo_app_channel";
     private static final String CHANNEL_NAME = "ToDo App Notifications";
 
-    // Creating notification channel
+    // Create notification channel (required for Android 8.0+)
     public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -30,11 +30,13 @@ public class NotificationHelper {
         }
     }
 
-
+    /**
+     * FIX: Handles stored URI strings (for custom sounds) or predefined names.
+     */
     public static Uri getSoundUri(String soundNameOrUri) {
         if (soundNameOrUri == null) return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
-        // 1. Check if it's a stored URI string
+        // 1. Check if it's a stored URI string (e.g., "content://...")
         if (soundNameOrUri.startsWith("content://")) {
             return Uri.parse(soundNameOrUri);
         }
@@ -56,7 +58,9 @@ public class NotificationHelper {
         }
     }
 
-
+    /**
+     * FIX: Accepts URI string/name and uses the updated getSoundUri method.
+     */
     public static void playTestSound(Context context, String soundNameOrUri) {
         try {
             Uri soundUri = getSoundUri(soundNameOrUri);
@@ -66,7 +70,7 @@ public class NotificationHelper {
                 android.os.Vibrator vibrator =
                         (android.os.Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                 if (vibrator != null && vibrator.hasVibrator()) {
-
+                    // Check for deprecated method use in a full project
                     vibrator.vibrate(500);
                 }
                 return;
@@ -75,7 +79,7 @@ public class NotificationHelper {
                 return;
             }
 
-            // test notification with the selected sound
+            // Create a test notification with the selected sound
             NotificationManager notificationManager =
                     (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -99,7 +103,7 @@ public class NotificationHelper {
         }
     }
 
-    // Method to create notifications for tasks/reminders
+    // Method to create actual notifications for tasks/reminders
     public static void sendNotification(Context context, String title, String message, String soundPreference) {
         try {
             Uri soundUri = getSoundUri(soundPreference);

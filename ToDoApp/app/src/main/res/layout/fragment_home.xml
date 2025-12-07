@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_gray"
+    android:background="?android:attr/colorBackground"
     android:fillViewport="true">
 
     <LinearLayout
@@ -12,13 +12,12 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <!-- Welcome Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="20dp"
             app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/white"
+            app:cardBackgroundColor="?attr/colorSurface"
             android:layout_marginBottom="24dp">
 
             <LinearLayout
@@ -31,7 +30,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Welcome back,"
-                    android:textColor="@color/gray_dark"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="16sp"
                     android:layout_marginBottom="4dp" />
 
@@ -39,18 +38,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Rakib Bhuiyan!"
-                    android:textColor="@color/black"
+                    android:textColor="?attr/colorOnSurface"
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp" />
-
-
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
 
-        <!-- Task Filter Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -60,44 +56,43 @@
 
             <Button
                 android:id="@+id/btnMyTasks"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="All Tasks"
-                android:background="@drawable/btn_selected"
-                android:textColor="@color/black"
+                android:backgroundTint="@drawable/btn_state_color_selector"
                 android:layout_marginEnd="8dp"
                 android:textAllCaps="false"/>
 
             <Button
                 android:id="@+id/btnInProgress"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="In Progress"
-                android:background="@drawable/btn_unselected"
-                android:textColor="@color/black"
+                android:textColor="?attr/colorOnSurface"
                 android:layout_marginEnd="8dp"
                 android:textAllCaps="false"/>
 
             <Button
                 android:id="@+id/btnCompleted"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Completed"
-                android:background="@drawable/btn_unselected"
-                android:textColor="@color/black"
+                android:textColor="?attr/colorOnSurface"
                 android:textAllCaps="false"/>
         </LinearLayout>
 
-        <!-- Task List Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/white">
+            app:cardBackgroundColor="?attr/colorSurface">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -105,50 +100,48 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="12dp">
+                            android:layout_weight="1"
+                            android:text="Your Tasks"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
 
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Your Tasks"
-                                android:textColor="@color/black"
-                                android:textSize="20sp"
-                                android:textStyle="bold" />
-
-                            <ImageButton
-                                android:id="@+id/btnSort"
-                                android:layout_width="32dp"
-                                android:layout_height="32dp"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:src="@drawable/outline_collapse_all_24"
-                                android:contentDescription="Sort Tasks"
-                                app:tint="@color/gray_dark" />
-
-                        </LinearLayout>
-                        <androidx.appcompat.widget.SearchView
-                            android:id="@+id/searchTaskCategory"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="12dp"
-                            android:background="@drawable/bg_search_rounded"
-                            app:queryHint="Search tasks by category..."
-                            app:iconifiedByDefault="false" />
+                        <ImageButton
+                            android:id="@+id/btnSort"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@drawable/outline_collapse_all_24"
+                            android:contentDescription="Sort Tasks"
+                            app:tint="?attr/colorOnSurfaceVariant" />
 
                     </LinearLayout>
+                    <androidx.appcompat.widget.SearchView
+                        android:id="@+id/searchTaskCategory"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:background="@drawable/bg_search_rounded"
+                        app:queryHint="Search tasks by category..."
+                        app:iconifiedByDefault="false" />
+
+                </LinearLayout>
 
 
                 <TextView
@@ -158,7 +151,7 @@
                     android:gravity="center"
                     android:padding="40dp"
                     android:text="No tasks yet. Create your first task!"
-                    android:textColor="@color/gray_dark"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="16sp"
                     android:visibility="gone" />
 

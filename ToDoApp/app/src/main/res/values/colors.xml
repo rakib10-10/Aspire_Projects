@@ -118,4 +118,13 @@
     <color name="priority_high">#F44336</color>
     <color name="priority_default">#2196F3</color>
 
+    <color name="background_color">#F0F0F0</color>
+
+
+    <color name="theme_background_color">#F8FAFC</color>
+    <color name="theme_surface_color">#FFFFFF</color>
+    <color name="theme_text_primary">#1F2937</color>
+    <color name="theme_text_secondary">#6B7280</color>
+    <color name="theme_outline_color">#E5E7EB</color>
+
 </resources>
