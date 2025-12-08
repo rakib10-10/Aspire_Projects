@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import android.preference.PreferenceManager;
 import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -16,9 +15,22 @@ import android.widget.Toast;
 public class MainActivity extends AppCompatActivity {
 
     BottomNavigationView bottomNavigationView;
+    private DatabaseHelper dbHelper; // Declare DB Helper
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        // --- THEME PERSISTENCE FIX: Apply saved theme BEFORE super.onCreate ---
+        dbHelper = new DatabaseHelper(this); // Initialize DB Helper
+        boolean isDarkMode = dbHelper.isDarkModeEnabled();
+        int mode = isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO;
+
+        // Apply the mode if it's different from the current default
+        if (AppCompatDelegate.getDefaultNightMode() != mode) {
+            AppCompatDelegate.setDefaultNightMode(mode);
+        }
+        // --- END THEME FIX ---
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -40,42 +52,22 @@ public class MainActivity extends AppCompatActivity {
                 int itemId = item.getItemId();
 
                 if (itemId == R.id.nav_home) {
-                    // Open HomeFragment
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, new HomeFragment())
-                            .commit();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new HomeFragment()).commit();
                     return true;
                 } else if (itemId == R.id.nav_calendar) {
-                    // Open CalendarFragment
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, new CalendarFragment())
-                            .commit();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new CalendarFragment()).commit();
                     return true;
                 }
                 else if (itemId == R.id.nav_clock) {
-                    // Open ClockFragment
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, new PomodoroFragment())
-                            .commit();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new PomodoroFragment()).commit();
                     return true;
                 }
                 else if (itemId == R.id.nav_notifications) {
-                    // Open NotificationsFragment
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, new NotificationsFragment())
-                            .commit();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new NotificationsFragment()).commit();
                     return true;
                 }
                 else if (itemId == R.id.nav_profile) {
-                    // Open ProfileFragment
-                    getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragment_container, new ProfileFragment())
-                            .commit();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new ProfileFragment()).commit();
                     return true;
                 }
 

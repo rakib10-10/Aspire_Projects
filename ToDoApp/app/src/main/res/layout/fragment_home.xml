@@ -35,6 +35,7 @@
                     android:layout_marginBottom="4dp" />
 
                 <TextView
+                    android:id="@+id/tvUserNameGreeting"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Rakib Bhuiyan!"
@@ -61,7 +62,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="All Tasks"
-                android:backgroundTint="@drawable/btn_state_color_selector"
+                android:backgroundTint="@color/btn_bg_tint_selector"
+                android:textColor="@color/btn_text_color_selector"
                 android:layout_marginEnd="8dp"
                 android:textAllCaps="false"/>
 
@@ -72,7 +74,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="In Progress"
-                android:textColor="?attr/colorOnSurface"
+                android:backgroundTint="@color/btn_bg_tint_selector"
+                android:textColor="@color/btn_text_color_selector"
                 android:layout_marginEnd="8dp"
                 android:textAllCaps="false"/>
 
@@ -83,7 +86,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Completed"
-                android:textColor="?attr/colorOnSurface"
+                android:backgroundTint="@color/btn_bg_tint_selector"
+                android:textColor="@color/btn_text_color_selector"
                 android:textAllCaps="false"/>
         </LinearLayout>
 

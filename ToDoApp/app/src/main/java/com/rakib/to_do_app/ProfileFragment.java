@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,15 +24,21 @@ import com.google.android.material.textfield.TextInputEditText;
 import de.hdodenhof.circleimageview.CircleImageView;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.List;
 
 public class ProfileFragment extends Fragment {
 
     private CircleImageView profileImage;
     private TextInputEditText etFullName, etEmail, etPhone, etBio;
-    private Button btnSaveProfile, btnCancel, btnChangePassword, btnPrivacySettings, btnLogout;
+    private Button btnSaveProfile, btnCancel;
     private ImageButton btnEditPhoto;
+    private TextView tvUserNameHeader; // For updating header name
+
+    // NEW BUTTON
+    private Button btnShareTasks;
 
     private DatabaseHelper dbHelper;
+    private TaskManager taskManager; // Need TaskManager to fetch tasks
     private String userId = "local_user";
 
     private static final String TAG = "ProfileFragment";
@@ -44,20 +51,16 @@ public class ProfileFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        // ASSUMED LAYOUT NAME: fragment_profile.xml
         View view = inflater.inflate(R.layout.activity_profile, container, false);
 
         Log.d(TAG, "onCreateView: Fragment created");
 
-        // Initializing SQLite Database
         dbHelper = new DatabaseHelper(requireContext());
+        taskManager = TaskManager.getInstance(requireContext());
 
-        // Initialize views
         initializeViews(view);
-
-        // Load user data
         loadUserData();
-
-        // Set click listeners
         setupClickListeners();
 
         return view;
@@ -71,12 +74,15 @@ public class ProfileFragment extends Fragment {
         etBio = view.findViewById(R.id.et_bio);
         btnSaveProfile = view.findViewById(R.id.btn_save_profile);
         btnCancel = view.findViewById(R.id.btn_cancel);
-        btnChangePassword = view.findViewById(R.id.btn_change_password);
-        btnPrivacySettings = view.findViewById(R.id.btn_privacy_settings);
-        btnLogout = view.findViewById(R.id.btn_logout);
         btnEditPhoto = view.findViewById(R.id.btn_edit_photo);
 
-        Log.d(TAG, "All views initialized successfully");
+        // Header Text
+        tvUserNameHeader = view.findViewById(R.id.tv_user_name);
+
+        // NEW Button
+        btnShareTasks = view.findViewById(R.id.btn_share_tasks);
+
+        // REMOVED old buttons: btnChangePassword, btnPrivacySettings, btnLogout
     }
 
     private void loadUserData() {
@@ -94,61 +100,81 @@ public class ProfileFragment extends Fragment {
         etPhone.setText(userProfile.getPhone());
         etBio.setText(userProfile.getBio());
 
-        // Loading profile image from Base64
+        // FIX: Update the header TextView with the loaded name
+        if (tvUserNameHeader != null) {
+            tvUserNameHeader.setText(userProfile.getName());
+        }
+
         if (userProfile.getProfileImageBase64() != null && !userProfile.getProfileImageBase64().isEmpty()) {
             currentBase64Image = userProfile.getProfileImageBase64();
             loadBase64Image(userProfile.getProfileImageBase64());
-            Log.d(TAG, "Profile image loaded from Base64");
         } else {
             profileImage.setImageResource(R.drawable.outline_account_circle_24);
-            Log.d(TAG, "No profile image, using placeholder");
         }
     }
 
     private void setupClickListeners() {
-        // Edit Photo button click listener
-        btnEditPhoto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "Edit Photo button clicked");
-                openImagePicker();
-            }
-        });
+        btnEditPhoto.setOnClickListener(v -> openImagePicker());
 
-        btnSaveProfile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveProfile();
-            }
-        });
+        btnSaveProfile.setOnClickListener(v -> saveProfile());
 
-        btnCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                loadUserData();
-            }
-        });
+        btnCancel.setOnClickListener(v -> loadUserData());
 
-        btnChangePassword.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getActivity(), "Change Password feature coming soon!", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // NEW: Share/Export Button Listener
+        btnShareTasks.setOnClickListener(v -> exportAndShareTasks());
 
-        btnPrivacySettings.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getActivity(), "Privacy Settings feature coming soon!", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // REMOVED listeners for btnChangePassword, btnPrivacySettings, btnLogout
+    }
 
-        btnLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(getActivity(), "Logout feature would require authentication", Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void exportAndShareTasks() {
+        Toast.makeText(requireContext(), "Generating tasks data...", Toast.LENGTH_SHORT).show();
+
+        // 1. Fetch all tasks
+        List<Task> tasks = taskManager.getAllTasks();
+
+        // 2. Generate a readable String (or ideally, a PDF file path)
+        String shareContent = generateTaskSummary(tasks);
+
+        if (shareContent.isEmpty()) {
+            Toast.makeText(requireContext(), "No tasks to export.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // NOTE: For full PDF support, you would generate a PDF file here (e.g., using iText)
+        // and get the file URI to share. We are using simple text share for safety and completeness.
+
+        // 3. Launch simple sharing intent
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My ToDo App Task List Export");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareContent);
+
+        // Ensure there is an app to handle the intent
+        if (shareIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
+            startActivity(Intent.createChooser(shareIntent, "Share Tasks Via"));
+        } else {
+            Toast.makeText(requireContext(), "No apps installed to handle sharing.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String generateTaskSummary(List<Task> tasks) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("--- Task List Export (").append(dbHelper.getUserProfile().getName()).append(") ---\n\n");
+
+        if (tasks == null || tasks.isEmpty()) {
+            return "";
+        }
+
+        for (Task task : tasks) {
+            sb.append("Title: ").append(task.getTitle()).append("\n");
+            sb.append("Priority: ").append(task.getPriority()).append("\n");
+            sb.append("Status: ").append(task.getStatus()).append("\n");
+            sb.append("Category: ").append(task.getCategory()).append("\n");
+            sb.append("Due: ").append(task.getDate()).append(" (").append(task.getStartTime()).append(" - ").append(task.getEndTime()).append(")\n");
+            sb.append("----------------------------\n");
+        }
+
+        return sb.toString();
     }
 
     private void openImagePicker() {
@@ -157,7 +183,6 @@ public class ProfileFragment extends Fragment {
             intent.setType("image/*");
             startActivityForResult(Intent.createChooser(intent, "Select Profile Picture"), PICK_IMAGE_REQUEST);
         } catch (Exception e) {
-            Log.e(TAG, "Error opening image picker: " + e.getMessage());
             Toast.makeText(getActivity(), "Error opening image picker", Toast.LENGTH_SHORT).show();
         }
     }
@@ -169,18 +194,13 @@ public class ProfileFragment extends Fragment {
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
             selectedImageUri = data.getData();
             if (selectedImageUri != null) {
-                Log.d(TAG, "Image selected: " + selectedImageUri.toString());
-
-                // Set the selected image to CircleImageView immediately
                 try {
                     Glide.with(this)
                             .load(selectedImageUri)
                             .into(profileImage);
 
-                    // Convert to Base64 and save
                     saveImageAsBase64(selectedImageUri);
                 } catch (Exception e) {
-                    Log.e(TAG, "Error loading selected image: " + e.getMessage());
                     Toast.makeText(getActivity(), "Error loading image", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -193,20 +213,16 @@ public class ProfileFragment extends Fragment {
         new Thread(() -> {
             try {
                 InputStream inputStream = getActivity().getContentResolver().openInputStream(imageUri);
-
-                // First, decode the bitmap to check size
                 BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
                 BitmapFactory.decodeStream(inputStream, null, options);
                 inputStream.close();
 
-                // Calculate sampling to reduce image size
                 int scale = 1;
                 while ((options.outWidth / scale / 2) >= 400 && (options.outHeight / scale / 2) >= 400) {
                     scale *= 2;
                 }
 
-                // Decode with sampling
                 BitmapFactory.Options sampledOptions = new BitmapFactory.Options();
                 sampledOptions.inSampleSize = scale;
                 inputStream = getActivity().getContentResolver().openInputStream(imageUri);
@@ -214,12 +230,10 @@ public class ProfileFragment extends Fragment {
                 inputStream.close();
 
                 if (bitmap != null) {
-                    // Compress to JPEG with quality adjustment
                     int quality = 80;
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
 
-                    // Check size and reduce quality if needed
                     byte[] imageBytes = baos.toByteArray();
                     int sizeInKB = imageBytes.length / 1024;
 
@@ -231,14 +245,11 @@ public class ProfileFragment extends Fragment {
                         sizeInKB = imageBytes.length / 1024;
                     }
 
-                    // Convert to Base64
                     String base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT);
 
-                    // Update on UI thread
                     getActivity().runOnUiThread(() -> {
                         currentBase64Image = base64Image;
                         saveBase64ImageToDatabase(base64Image);
-                        Log.d(TAG, "Image converted to Base64");
                         Toast.makeText(getActivity(), "Profile picture saved!", Toast.LENGTH_SHORT).show();
                     });
 
@@ -246,7 +257,6 @@ public class ProfileFragment extends Fragment {
                 }
 
             } catch (Exception e) {
-                Log.e(TAG, "Error converting image to Base64: " + e.getMessage());
                 getActivity().runOnUiThread(() -> {
                     Toast.makeText(getActivity(), "Error processing image", Toast.LENGTH_LONG).show();
                 });
@@ -255,12 +265,10 @@ public class ProfileFragment extends Fragment {
     }
 
     private void saveBase64ImageToDatabase(String base64Image) {
-        // Get current profile and update image
         UserProfile currentProfile = dbHelper.getUserProfile();
         if (currentProfile != null) {
             currentProfile.setProfileImageBase64(base64Image);
             dbHelper.saveUserProfile(currentProfile);
-            Log.d(TAG, "Profile image saved to database");
         }
     }
 
@@ -268,10 +276,13 @@ public class ProfileFragment extends Fragment {
         try {
             byte[] imageBytes = Base64.decode(base64Image, Base64.DEFAULT);
             Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-            profileImage.setImageBitmap(bitmap);
-            Log.d(TAG, "Base64 image loaded successfully");
+
+            if (getActivity() != null) {
+                Glide.with(this).load(bitmap).into(profileImage);
+            } else {
+                profileImage.setImageBitmap(bitmap);
+            }
         } catch (Exception e) {
-            Log.e(TAG, "Error loading Base64 image: " + e.getMessage());
             profileImage.setImageResource(R.drawable.outline_account_circle_24);
         }
     }
@@ -304,6 +315,10 @@ public class ProfileFragment extends Fragment {
         long result = dbHelper.saveUserProfile(updatedProfile);
         if (result > 0) {
             Toast.makeText(getActivity(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
+            // FIX: Immediately update the header TextView after a successful save
+            if (tvUserNameHeader != null) {
+                tvUserNameHeader.setText(name);
+            }
         } else {
             Toast.makeText(getActivity(), "Failed to update profile", Toast.LENGTH_SHORT).show();
         }

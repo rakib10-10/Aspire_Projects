@@ -251,51 +251,57 @@
                     android:layout_marginTop="8dp"
                     android:weightSum="6">
 
-                    <Button
+                    <View
                         android:id="@+id/color_red"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
+                        android:background="@drawable/circle_shape_red"
                         android:tag="#F44336" />
 
-                    <Button
+                    <View
                         android:id="@+id/color_blue"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
+                        android:background="@drawable/circle_shape_blue"
                         android:tag="#2196F3" />
 
-                    <Button
+                    <View
                         android:id="@+id/color_green"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
+                        android:background="@drawable/circle_shape_green"
                         android:tag="#4CAF50" />
 
-                    <Button
+                    <View
                         android:id="@+id/color_yellow"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
+                        android:background="@drawable/circle_shape_yellow"
                         android:tag="#FFEB3B" />
 
-                    <Button
+                    <View
                         android:id="@+id/color_purple"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
+                        android:background="@drawable/circle_shape_purple"
                         android:tag="#9C27B0" />
 
-                    <Button
+                    <View
                         android:id="@+id/color_orange"
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
+                        android:background="@drawable/circle_shape_orange"
                         android:tag="#FF9800" />
 
                 </LinearLayout>

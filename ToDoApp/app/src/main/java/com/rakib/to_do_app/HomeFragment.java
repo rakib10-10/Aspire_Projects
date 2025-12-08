@@ -4,10 +4,11 @@ import android.content.res.ColorStateList;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat; // <-- NEW IMPORT
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,12 +18,9 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.widget.SearchView;
+import com.google.android.material.button.MaterialButton;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 
 public class HomeFragment extends Fragment {
@@ -30,12 +28,14 @@ public class HomeFragment extends Fragment {
     private Button btnMyTasks, btnInProgress, btnCompleted;
     private RecyclerView recyclerTasks;
     private TextView txtEmptyState;
+    private TextView tvUserNameGreeting; // <--- 1. DECLARE NEW TEXTVIEW
     private TaskAdapter taskAdapter;
     private List<Task> allTasks = new ArrayList<>();
     private String currentTab = "all";
     private String currentSearchQuery = "";
     private String currentSortBy = "date";
     private TaskManager taskManager;
+    private DatabaseHelper dbHelper; // <--- DECLARE DB HELPER
     private SearchView searchTaskCategory;
     private ImageButton btnSort;
 
@@ -49,15 +49,30 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         taskManager = TaskManager.getInstance(requireContext());
+        dbHelper = new DatabaseHelper(requireContext()); // <--- INITIALIZE DB HELPER
 
         initializeViews(view);
+
+        loadUserName(); // <--- 4. LOAD USER NAME
+
         setupTaskAdapter();
         setupClickListeners();
         setupSearchAndSort();
+
         loadTasks();
 
         return view;
     }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // Ensure the initial tab state is set after the view is created
+        if (currentTab.equals("all")) {
+            selectTab(btnMyTasks);
+        }
+    }
+
 
     private void initializeViews(View view) {
         btnMyTasks = view.findViewById(R.id.btnMyTasks);
@@ -67,7 +82,26 @@ public class HomeFragment extends Fragment {
         txtEmptyState = view.findViewById(R.id.txtEmptyState);
         searchTaskCategory = view.findViewById(R.id.searchTaskCategory);
         btnSort = view.findViewById(R.id.btnSort);
+
+        // 2. INITIALIZE NEW TEXTVIEW (using assumed ID)
+        tvUserNameGreeting = view.findViewById(R.id.tvUserNameGreeting);
     }
+
+    // 3. METHOD TO LOAD USER NAME
+    private void loadUserName() {
+        UserProfile userProfile = dbHelper.getUserProfile();
+        if (userProfile != null && tvUserNameGreeting != null) {
+            String name = userProfile.getName();
+            // Show only the first name for a friendlier greeting if full name is available
+            if (name != null && !name.isEmpty()) {
+                String firstName = name.split(" ")[0];
+                tvUserNameGreeting.setText(firstName + "!");
+            } else {
+                tvUserNameGreeting.setText("User!");
+            }
+        }
+    }
+
 
     private void setupTaskAdapter() {
         taskAdapter = new TaskAdapter(new ArrayList<>(), new TaskAdapter.OnTaskActionListener() {
@@ -181,32 +215,22 @@ public class HomeFragment extends Fragment {
         popup.show();
     }
 
-    /**
-     * FIX: Updated method to use theme-aware drawables and color state lists
-     * instead of hardcoded colors, ensuring Day/Night mode compatibility.
-     */
     private void selectTab(Button selectedButton) {
-
-        // --- 1. Get Color State List for Text ---
-        // This selector defines text color contrast (e.g., primary color when selected,
-        // or the default colorOnSurface otherwise).
-        ColorStateList textColors = ContextCompat.getColorStateList(requireContext(), R.color.btn_text_color_selector);
-
-        // --- 2. Reset All Buttons to Unselected State ---
         Button[] allButtons = {btnMyTasks, btnInProgress, btnCompleted};
+
         for (Button button : allButtons) {
-            button.setBackgroundResource(R.drawable.btn_unselected);
-            button.setTextColor(textColors); // Set text color using selector
+            if (button instanceof MaterialButton) {
+                ((MaterialButton) button).setChecked(false);
+            }
         }
 
-        // --- 3. Set Selected Button State ---
-        selectedButton.setBackgroundResource(R.drawable.btn_selected);
-        // Note: The text color is already handled by the selector, which defaults to
-        // the selected state color when btn_selected (solid color) is applied.
+        if (selectedButton instanceof MaterialButton) {
+            ((MaterialButton) selectedButton).setChecked(true);
+        }
     }
 
     private void loadTasks() {
-        allTasks = taskManager.getTasks();
+        allTasks = taskManager.getAllTasks();
         filterAndSortTasks();
     }
 
@@ -309,5 +333,8 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         loadTasks();
+
+        // Ensure the name is fresh every time the fragment is resumed
+        loadUserName();
     }
 }

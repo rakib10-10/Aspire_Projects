@@ -14,7 +14,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // Database Information - INCREASE VERSION to 4
     private static final String DATABASE_NAME = "TodoApp.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     // Table Names
     private static final String TABLE_TASKS = "tasks";
@@ -57,6 +57,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_REMINDER_TITLE = "title";
     private static final String KEY_REMINDER_DESCRIPTION = "description";
     private static final String KEY_REMINDER_TIME = "reminder_time";
+    private static final String KEY_CUSTOM_RINGTONE_URI = "custom_ringtone_uri";
 
     // Table Create Statements - UPDATED to include dark_mode_enabled
     private static final String CREATE_TABLE_TASKS = "CREATE TABLE " + TABLE_TASKS + "("
@@ -91,6 +92,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_NOTIF_DEFAULT_REMINDER_TIME + " TEXT DEFAULT '15 minutes before',"
             + KEY_NOTIF_SOUND + " TEXT DEFAULT 'Default',"
             + KEY_DARK_MODE + " INTEGER DEFAULT 0," // NEW COLUMN
+            + KEY_CUSTOM_RINGTONE_URI + " TEXT DEFAULT '',"
             + KEY_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP"
             + ")";
 
@@ -124,21 +126,44 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         Log.d(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
 
-        if (oldVersion < 4) {
-            // Add dark_mode_enabled column to notification_settings table
-            db.execSQL("ALTER TABLE " + TABLE_NOTIFICATION_SETTINGS +
-                    " ADD COLUMN " + KEY_DARK_MODE + " INTEGER DEFAULT 0");
-            Log.d(TAG, "Added dark_mode_enabled column to notification_settings table");
+        // Handle migrations for each version incrementally
+        for (int version = oldVersion + 1; version <= newVersion; version++) {
+            switch (version) {
+                case 4:
+                    // Add dark_mode_enabled column
+                    try {
+                        db.execSQL("ALTER TABLE " + TABLE_NOTIFICATION_SETTINGS +
+                                " ADD COLUMN " + KEY_DARK_MODE + " INTEGER DEFAULT 0");
+                        Log.d(TAG, "Added dark_mode_enabled column");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error adding dark_mode_enabled: " + e.getMessage());
+                    }
+                    break;
+                case 5:
+                    // Add custom_ringtone_uri column
+                    try {
+                        db.execSQL("ALTER TABLE " + TABLE_NOTIFICATION_SETTINGS +
+                                " ADD COLUMN " + KEY_CUSTOM_RINGTONE_URI + " TEXT DEFAULT ''");
+                        Log.d(TAG, "Added custom_ringtone_uri column");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error adding custom_ringtone_uri: " + e.getMessage());
+                    }
+                    break;
+            }
         }
 
-        // For major version changes, drop and recreate tables
+        // For major version changes (from before version 3)
         if (oldVersion < 3) {
             Log.w(TAG, "Dropping all tables - this will cause data loss!");
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_TASKS);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_PROFILE);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_NOTIFICATION_SETTINGS);
-            db.execSQL("DROP TABLE IF EXISTS " + TABLE_REMINDERS);
-            onCreate(db);
+            try {
+                db.execSQL("DROP TABLE IF EXISTS " + TABLE_TASKS);
+                db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_PROFILE);
+                db.execSQL("DROP TABLE IF EXISTS " + TABLE_NOTIFICATION_SETTINGS);
+                db.execSQL("DROP TABLE IF EXISTS " + TABLE_REMINDERS);
+                onCreate(db);
+            } catch (Exception e) {
+                Log.e(TAG, "Error dropping tables: " + e.getMessage());
+            }
         }
     }
 
@@ -149,10 +174,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_NOTIF_DAILY_SUMMARY, 0);
         values.put(KEY_NOTIF_DEFAULT_REMINDER_TIME, "15 minutes before");
         values.put(KEY_NOTIF_SOUND, "Default");
-        values.put(KEY_DARK_MODE, 0); // Default: light mode
+        values.put(KEY_DARK_MODE, 0);// Default: light mode
+        values.put(KEY_CUSTOM_RINGTONE_URI, "");
 
         db.insert(TABLE_NOTIFICATION_SETTINGS, null, values);
         Log.d(TAG, "Default notification settings inserted with dark_mode = 0");
+
     }
 
     // ==================== DARK MODE METHODS ====================
@@ -351,6 +378,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             settings.setNotificationSound(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTIF_SOUND)));
             // ADDED: Dark mode setting
             settings.setDarkModeEnabled(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_DARK_MODE)) == 1);
+            settings.setCustomRingtoneUri(cursor.getString(cursor.getColumnIndexOrThrow(KEY_CUSTOM_RINGTONE_URI)));
+
         }
 
         cursor.close();
@@ -395,6 +424,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new String[]{String.valueOf(taskId)});
         db.close();
         Log.d(TAG, "Reminder deleted for task ID: " + taskId);
+    }
+    public void saveCustomRingtoneUri(String uri) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_CUSTOM_RINGTONE_URI, uri);
+        values.put(KEY_NOTIF_SOUND, "Custom"); // Set the sound type to "Custom"
+
+        db.update(TABLE_NOTIFICATION_SETTINGS, values, null, null);
+        db.close();
+
+        Log.d(TAG, "Custom ringtone URI saved: " + uri);
     }
 
     public List<Reminder> getAllReminders() {

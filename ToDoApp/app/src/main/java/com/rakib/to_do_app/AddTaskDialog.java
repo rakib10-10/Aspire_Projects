@@ -152,8 +152,11 @@ public class AddTaskDialog extends DialogFragment {
         });
     }
 
+    // AddTaskDialog.java
+
+    // Update the setupColorSelection method
     private void setupColorSelection() {
-        int[] colorButtons = {
+        int[] colorViewIds = {
                 R.id.color_red, R.id.color_blue, R.id.color_green,
                 R.id.color_yellow, R.id.color_purple, R.id.color_orange
         };
@@ -163,24 +166,14 @@ public class AddTaskDialog extends DialogFragment {
                 "#FFEB3B", "#9C27B0", "#FF9800"
         };
 
-        for (int i = 0; i < colorButtons.length; i++) {
-            Button colorBtn = dialogView.findViewById(colorButtons[i]);
+        for (int i = 0; i < colorViewIds.length; i++) {
+            final View colorView = dialogView.findViewById(colorViewIds[i]);
             final String color = colorValues[i];
 
-            colorBtn.setTag(color);
-
-            // Creating a circular drawable with the color
-            GradientDrawable drawable = new GradientDrawable();
-            drawable.setShape(GradientDrawable.OVAL);
-            drawable.setColor(Color.parseColor(color));
-
-            colorBtn.setBackground(drawable);
-            colorBtn.setText("");
-
-            colorBtn.setOnClickListener(v -> {
+            colorView.setOnClickListener(v -> {
                 selectedColor = color;
                 Log.d("ColorDebug", "Color selected: " + selectedColor);
-                highlightSelectedColor(color);
+                highlightSelectedColor(selectedColor);
             });
         }
 
@@ -189,25 +182,27 @@ public class AddTaskDialog extends DialogFragment {
     }
 
     private void highlightSelectedColor(String selectedColor) {
-        int[] colorButtons = {
+        int[] colorViewIds = {
                 R.id.color_red, R.id.color_blue, R.id.color_green,
                 R.id.color_yellow, R.id.color_purple, R.id.color_orange
         };
 
-        for (int colorBtnId : colorButtons) {
-            Button colorBtn = dialogView.findViewById(colorBtnId);
-            String btnColor = (String) colorBtn.getTag();
+        for (int id : colorViewIds) {
+            View view = dialogView.findViewById(id);
+            String tagColor = (String) view.getTag(); // Ensure android:tag is set in XML
 
-            // The background is a GradientDrawable, cast it to apply stroke
-            GradientDrawable background = (GradientDrawable) colorBtn.getBackground();
-            if (background != null) {
-                if (btnColor.equals(selectedColor)) {
-                    // Selected: add white border
-                    background.setStroke(6, Color.WHITE);
-                } else {
-                    // Not selected: no border
-                    background.setStroke(0, Color.TRANSPARENT);
-                }
+            // We need to manipulate the background drawable to add a stroke
+            GradientDrawable background = (GradientDrawable) view.getBackground();
+
+            // Use mutate() to ensure we don't affect other views sharing this drawable state
+            background = (GradientDrawable) background.mutate();
+
+            if (tagColor.equals(selectedColor)) {
+                // Add a border to indicate selection (White or Dark Gray depending on theme)
+                background.setStroke(8, Color.BLACK); // Use a visible contrast color
+            } else {
+                // Remove border
+                background.setStroke(0, Color.TRANSPARENT);
             }
         }
     }

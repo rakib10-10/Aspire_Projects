@@ -8,6 +8,8 @@ public class NotificationSettings {
     private String notificationSound;
     private boolean darkModeEnabled;
 
+    private String customRingtoneUri;
+
     public NotificationSettings() {
         // Default values
         this.taskRemindersEnabled = true;
@@ -15,6 +17,9 @@ public class NotificationSettings {
         this.dailySummaryEnabled = false;
         this.defaultReminderTime = "15 minutes before";
         this.notificationSound = "Default";
+        this.customRingtoneUri = "";
+        this.darkModeEnabled = false;
+
 
     }
 
@@ -49,5 +54,12 @@ public class NotificationSettings {
 
     public void setDarkModeEnabled(boolean darkModeEnabled) {
         this.darkModeEnabled = darkModeEnabled;
+    }
+    public String getCustomRingtoneUri() {
+        return customRingtoneUri;
+    }
+
+    public void setCustomRingtoneUri(String customRingtoneUri) {
+        this.customRingtoneUri = customRingtoneUri;
     }
 }

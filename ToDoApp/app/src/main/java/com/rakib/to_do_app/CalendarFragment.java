@@ -184,7 +184,7 @@ public class CalendarFragment extends Fragment {
 
 
                 // Refresh local list
-                taskList = TaskManager.getInstance(requireContext()).getTasks();
+                taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                 filterTasksByDate();
 
                 Toast.makeText(requireContext(), "Task Added with reminder!", Toast.LENGTH_SHORT).show();
@@ -207,7 +207,7 @@ public class CalendarFragment extends Fragment {
                     TaskManager.getInstance(requireContext()).removeTask(task);
 
                     // Refresh local list
-                    taskList = TaskManager.getInstance(requireContext()).getTasks();
+                    taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                     filterTasksByDate();
 
                     Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
@@ -239,7 +239,7 @@ public class CalendarFragment extends Fragment {
                 //  Removing redundant update logic. The dialog now updates the task itself.
 
                 // Refresh local list
-                taskList = TaskManager.getInstance(requireContext()).getTasks();
+                taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                 filterTasksByDate();
 
                 Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();
@@ -276,7 +276,7 @@ public class CalendarFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // Refresh tasks from TaskManager
-        taskList = TaskManager.getInstance(requireContext()).getTasks();
+        taskList = TaskManager.getInstance(requireContext()).getAllTasks();
         filterTasksByDate();
     }
 }

@@ -10,8 +10,7 @@ public class TaskManager {
     private static final String TAG = "TaskManager";
     private static TaskManager instance;
     private final DatabaseHelper dbHelper;
-    private List<Task> tasks;
-
+    private List<Task> tasks; // This holds the local, loaded list of tasks.
 
 
     private TaskManager(Context context) {
@@ -37,7 +36,12 @@ public class TaskManager {
         return instance;
     }
 
-    public List<Task> getTasks() {
+    /**
+     * Renamed method to match external usage: List<Task> tasks = taskManager.getAllTasks();
+     * This returns the locally cached, currently loaded list of tasks.
+     * @return The list of all tasks currently managed by TaskManager.
+     */
+    public List<Task> getAllTasks() { // <-- FIX: Renamed from getTasks() to getAllTasks()
         if (tasks == null) {
             tasks = new ArrayList<>();
         }
