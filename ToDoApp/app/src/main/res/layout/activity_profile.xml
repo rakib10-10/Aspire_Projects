@@ -52,7 +52,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="Rakib Bhuiyan"
+                android:text="User Name"
                 android:textColor="?attr/colorOnBackground"
                 android:textSize="24sp"
                 android:textStyle="bold" />
@@ -62,7 +62,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="mdtara0199@gmail.com"
+                android:text="usermail@gmail.com"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="16sp"
                 android:alpha="0.8" />
@@ -97,9 +97,21 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:layout_marginTop="16dp">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Name" android:textSize="14sp" android:textColor="?attr/colorOnSurfaceVariant" />
-                    <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" app:boxBackgroundMode="outline">
-                        <com.google.android.material.textfield.TextInputEditText android:id="@+id/et_full_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Rakib Bhuiyan" />
+                    <TextView android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Name"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        app:boxBackgroundMode="outline">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_full_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="User Name" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
@@ -125,7 +137,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="textEmailAddress"
-                            android:text="mdtara0199@gmail.com" />
+                            android:text="usermail@gmail.com" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
@@ -150,7 +162,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="phone"
-                            android:text="+1 234 567 8900" />
+                            android:text="+880 " />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
@@ -177,7 +189,7 @@
                             android:gravity="top"
                             android:inputType="textMultiLine"
                             android:lines="4"
-                            android:text="Passionate about productivity and task management. Love creating efficient workflows!" />
+                            android:text="Add your Bio" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 

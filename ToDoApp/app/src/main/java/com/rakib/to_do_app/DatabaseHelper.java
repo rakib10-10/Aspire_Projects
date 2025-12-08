@@ -333,10 +333,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private UserProfile createDefaultProfile() {
         UserProfile defaultProfile = new UserProfile(
                 "local_user",
-                "Rakibul Hasan Bhuiyan",
-                "mdtara0199@gmail.com",
-                "+880 1316787455",
-                "Passionate about productivity and task management. Love creating efficient workflows!",
+                "User Name",
+                "usermail@gmail.com",
+                "+880 ",
+                "User bio",
                 ""
         );
         saveUserProfile(defaultProfile);
