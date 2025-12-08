@@ -45,7 +45,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
             pomodoroService.setCallback(PomodoroFragment.this);
             isServiceBound = true;
 
-            // Update UI with service state
             updateUIFromService();
             Log.d(TAG, "Service connected");
         }
@@ -63,7 +62,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate() called");
 
-        // Start and bind to the service
         Intent serviceIntent = new Intent(requireContext(), PomodoroService.class);
         requireActivity().startService(serviceIntent);
         requireActivity().bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
@@ -84,12 +82,10 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
         initializeViews(view);
         progressBarTimer.setMax(10000);
 
-        // Set initial slider value
         timeSlider.setValue((float) (startTimeInMillis / (60 * 1000)));
 
         setupListeners();
 
-        // Update UI if service is already bound
         if (isServiceBound && pomodoroService != null) {
             updateUIFromService();
         }
@@ -105,7 +101,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
     }
 
     private void setupListeners() {
-        // Slider Listener
         timeSlider.addOnChangeListener((slider, value, fromUser) -> {
             if (!isServiceBound || pomodoroService == null || !pomodoroService.isTimerRunning()) {
                 startTimeInMillis = (long) value * 60 * 1000;
@@ -115,7 +110,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
             }
         });
 
-        // Start/Pause Button
         btnPlayPause.setOnClickListener(v -> {
             if (!isServiceBound || pomodoroService == null) return;
 
@@ -127,10 +121,8 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
                 timeSlider.setEnabled(true);
             } else {
                 if (pomodoroService.getTimeLeftInMillis() <= 0) {
-                    // Start new timer
                     pomodoroService.startTimer(startTimeInMillis);
                 } else {
-                    // Resume existing timer
                     pomodoroService.resumeTimer();
                 }
                 btnPlayPause.setText("Pause");
@@ -140,7 +132,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
             }
         });
 
-        // Reset Button
         btnReset.setOnClickListener(v -> {
             if (!isServiceBound || pomodoroService == null) return;
 
@@ -180,7 +171,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
         String timeFormatted = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
         tvTimer.setText(timeFormatted);
 
-        // Update progress bar
         if (startTimeInMillis > 0) {
             double progress = (double) millis / startTimeInMillis;
             progressBarTimer.setProgress((int) (progress * 10000));
@@ -189,7 +179,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
         }
     }
 
-    // TimerCallback methods
     @Override
     public void onTimerTick(long millisUntilFinished) {
         Activity activity = getActivity();
@@ -220,7 +209,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
     @Override
     public void onDestroy() {
         super.onDestroy();
-        // Unbind from service when fragment is destroyed
         if (isServiceBound) {
             requireActivity().unbindService(serviceConnection);
             isServiceBound = false;

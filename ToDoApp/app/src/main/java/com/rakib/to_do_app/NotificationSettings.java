@@ -11,7 +11,6 @@ public class NotificationSettings {
     private String customRingtoneUri;
 
     public NotificationSettings() {
-        // Default values
         this.taskRemindersEnabled = true;
         this.dueDateAlertsEnabled = true;
         this.dailySummaryEnabled = false;
@@ -19,11 +18,8 @@ public class NotificationSettings {
         this.notificationSound = "Default";
         this.customRingtoneUri = "";
         this.darkModeEnabled = false;
-
-
     }
 
-    // Getters and Setters
     public boolean isTaskRemindersEnabled() { return taskRemindersEnabled; }
     public void setTaskRemindersEnabled(boolean taskRemindersEnabled) {
         this.taskRemindersEnabled = taskRemindersEnabled;

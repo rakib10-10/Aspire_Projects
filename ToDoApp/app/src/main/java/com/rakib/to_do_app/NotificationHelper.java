@@ -37,25 +37,13 @@ public class NotificationHelper {
         }
     }
 
-    /**
-     * Resolves the correct Sound URI.
-     * ORDER OF OPERATIONS IS CRITICAL HERE:
-     * 1. Check for direct URI.
-     * 2. Check for Standard Names (Gentle, Urgent, etc.). << MOVED UP
-     * 3. Check Database for Custom URI.
-     */
     public static Uri getSoundUri(Context context, String soundNameOrUri) {
-        // 0. Null check
         if (soundNameOrUri == null) return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
-        // 1. Direct URI check (content:// or file://)
         if (soundNameOrUri.contains("://")) {
             return Uri.parse(soundNameOrUri);
         }
 
-        // 2. CHECK STANDARD NAMES FIRST
-        // We must check these BEFORE the database. Otherwise, if you save "Gentle",
-        // the DB check will see "Gentle" matches the DB setting and try to play the custom URI.
         switch (soundNameOrUri) {
             case "Urgent":
             case "Alert":
@@ -65,24 +53,18 @@ public class NotificationHelper {
                 return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             case "Vibrate only":
             case "Silent":
-                return null; // No sound
+                return null;
             case "Gentle":
             case "Default":
                 return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            // If it's "Custom" or a completely unknown name, we break and check the DB below
         }
 
-        // 3. Check Database for Custom URI
-        // Only runs if the name wasn't caught by the switch case above.
         try {
             DatabaseHelper dbHelper = new DatabaseHelper(context);
             NotificationSettings settings = dbHelper.getNotificationSettings();
             String storedName = settings.getNotificationSound();
             String storedUri = settings.getCustomRingtoneUri();
 
-            // Logic:
-            // A. If input is explicitly "Custom", return the URI.
-            // B. If input matches the stored name (e.g., user renamed it), return the URI.
             if ("Custom".equals(soundNameOrUri) || (storedName != null && storedName.equals(soundNameOrUri))) {
                 if (storedUri != null && !storedUri.isEmpty()) {
                     return Uri.parse(storedUri);
@@ -92,7 +74,6 @@ public class NotificationHelper {
             Log.e(TAG, "Error retrieving custom sound from DB: " + e.getMessage());
         }
 
-        // 4. Final Fallback
         return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     }
 
@@ -101,7 +82,6 @@ public class NotificationHelper {
             Uri soundUri = getSoundUri(context, soundName);
 
             if (soundUri == null) {
-                Log.d(TAG, "Silent sound selected, skipping playback.");
                 return;
             }
 

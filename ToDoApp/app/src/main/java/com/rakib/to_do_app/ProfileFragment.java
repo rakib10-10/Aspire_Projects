@@ -32,13 +32,12 @@ public class ProfileFragment extends Fragment {
     private TextInputEditText etFullName, etEmail, etPhone, etBio;
     private Button btnSaveProfile, btnCancel;
     private ImageButton btnEditPhoto;
-    private TextView tvUserNameHeader; // For updating header name
+    private TextView tvUserNameHeader;
 
-    // NEW BUTTON
     private Button btnShareTasks;
 
     private DatabaseHelper dbHelper;
-    private TaskManager taskManager; // Need TaskManager to fetch tasks
+    private TaskManager taskManager;
     private String userId = "local_user";
 
     private static final String TAG = "ProfileFragment";
@@ -51,7 +50,6 @@ public class ProfileFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // ASSUMED LAYOUT NAME: fragment_profile.xml
         View view = inflater.inflate(R.layout.activity_profile, container, false);
 
         Log.d(TAG, "onCreateView: Fragment created");
@@ -76,13 +74,9 @@ public class ProfileFragment extends Fragment {
         btnCancel = view.findViewById(R.id.btn_cancel);
         btnEditPhoto = view.findViewById(R.id.btn_edit_photo);
 
-        // Header Text
         tvUserNameHeader = view.findViewById(R.id.tv_user_name);
 
-        // NEW Button
         btnShareTasks = view.findViewById(R.id.btn_share_tasks);
-
-        // REMOVED old buttons: btnChangePassword, btnPrivacySettings, btnLogout
     }
 
     private void loadUserData() {
@@ -100,7 +94,6 @@ public class ProfileFragment extends Fragment {
         etPhone.setText(userProfile.getPhone());
         etBio.setText(userProfile.getBio());
 
-        // FIX: Update the header TextView with the loaded name
         if (tvUserNameHeader != null) {
             tvUserNameHeader.setText(userProfile.getName());
         }
@@ -120,19 +113,14 @@ public class ProfileFragment extends Fragment {
 
         btnCancel.setOnClickListener(v -> loadUserData());
 
-        // NEW: Share/Export Button Listener
         btnShareTasks.setOnClickListener(v -> exportAndShareTasks());
-
-        // REMOVED listeners for btnChangePassword, btnPrivacySettings, btnLogout
     }
 
     private void exportAndShareTasks() {
         Toast.makeText(requireContext(), "Generating tasks data...", Toast.LENGTH_SHORT).show();
 
-        // 1. Fetch all tasks
         List<Task> tasks = taskManager.getAllTasks();
 
-        // 2. Generate a readable String (or ideally, a PDF file path)
         String shareContent = generateTaskSummary(tasks);
 
         if (shareContent.isEmpty()) {
@@ -140,16 +128,11 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        // NOTE: For full PDF support, you would generate a PDF file here (e.g., using iText)
-        // and get the file URI to share. We are using simple text share for safety and completeness.
-
-        // 3. Launch simple sharing intent
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My ToDo App Task List Export");
         shareIntent.putExtra(Intent.EXTRA_TEXT, shareContent);
 
-        // Ensure there is an app to handle the intent
         if (shareIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
             startActivity(Intent.createChooser(shareIntent, "Share Tasks Via"));
         } else {
@@ -315,7 +298,6 @@ public class ProfileFragment extends Fragment {
         long result = dbHelper.saveUserProfile(updatedProfile);
         if (result > 0) {
             Toast.makeText(getActivity(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
-            // FIX: Immediately update the header TextView after a successful save
             if (tvUserNameHeader != null) {
                 tvUserNameHeader.setText(name);
             }

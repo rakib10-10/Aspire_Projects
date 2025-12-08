@@ -10,16 +10,13 @@ public class TaskManager {
     private static final String TAG = "TaskManager";
     private static TaskManager instance;
     private final DatabaseHelper dbHelper;
-    private List<Task> tasks; // This holds the local, loaded list of tasks.
-
+    private List<Task> tasks;
 
     private TaskManager(Context context) {
-        // Use application context to prevent memory leaks
         this.dbHelper = new DatabaseHelper(context.getApplicationContext());
         this.tasks = new ArrayList<>();
         loadTasksFromDatabase();
     }
-
 
     public static synchronized TaskManager getInstance(Context context) {
         if (instance == null) {
@@ -28,7 +25,6 @@ public class TaskManager {
         return instance;
     }
 
-
     public static TaskManager getInstance() {
         if (instance == null) {
             throw new IllegalStateException("TaskManager must be initialized first with getInstance(Context)");
@@ -36,16 +32,23 @@ public class TaskManager {
         return instance;
     }
 
-    /**
-     * Renamed method to match external usage: List<Task> tasks = taskManager.getAllTasks();
-     * This returns the locally cached, currently loaded list of tasks.
-     * @return The list of all tasks currently managed by TaskManager.
-     */
-    public List<Task> getAllTasks() { // <-- FIX: Renamed from getTasks() to getAllTasks()
+    public List<Task> getAllTasks() {
         if (tasks == null) {
             tasks = new ArrayList<>();
         }
         return tasks;
+    }
+
+    // Method to get a task by ID from the local cache
+    public Task getTaskById(long taskId) {
+        if (tasks != null) {
+            for (Task task : tasks) {
+                if (task.getId() == taskId) {
+                    return task;
+                }
+            }
+        }
+        return null;
     }
 
 
@@ -57,11 +60,9 @@ public class TaskManager {
 
         long id = dbHelper.addTask(task);
 
-
         if (id != -1) {
             task.setId(id);
             tasks.add(task);
-            Log.d(TAG, "Task added with ID: " + id);
         }
         return id;
     }
@@ -69,11 +70,7 @@ public class TaskManager {
     public void removeTask(Task task) {
         if (dbHelper != null && tasks != null) {
             dbHelper.deleteTask(task.getId());
-
-
             tasks.removeIf(t -> t.getId() == task.getId());
-
-            Log.d(TAG, "Task removed: " + task.getTitle());
         } else {
             Log.e(TAG, "DatabaseHelper or tasks list is null - cannot remove task");
         }
@@ -83,7 +80,6 @@ public class TaskManager {
         if (dbHelper != null && tasks != null) {
             dbHelper.updateTask(updatedTask);
 
-            // Update in local list
             for (int i = 0; i < tasks.size(); i++) {
                 Task task = tasks.get(i);
                 if (task.getId() == updatedTask.getId()) {
@@ -91,7 +87,6 @@ public class TaskManager {
                     break;
                 }
             }
-            Log.d(TAG, "Task updated: " + updatedTask.getTitle());
         } else {
             Log.e(TAG, "DatabaseHelper or tasks list is null - cannot update task");
         }
@@ -108,7 +103,6 @@ public class TaskManager {
             if (databaseTasks != null) {
                 tasks.addAll(databaseTasks);
             }
-            Log.d(TAG, "Tasks loaded from database: " + tasks.size());
         } else {
             Log.e(TAG, "DatabaseHelper is null - cannot load tasks");
         }
@@ -117,18 +111,6 @@ public class TaskManager {
     public void refreshTasks() {
         loadTasksFromDatabase();
     }
-
-    public Task getTaskById(long taskId) {
-        if (tasks != null) {
-            for (Task task : tasks) {
-                if (task.getId() == taskId) {
-                    return task;
-                }
-            }
-        }
-        return null;
-    }
-
 
     public void close() {
         if (dbHelper != null) {

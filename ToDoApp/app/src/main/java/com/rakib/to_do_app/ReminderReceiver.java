@@ -13,46 +13,83 @@ import androidx.core.app.NotificationCompat;
 public class ReminderReceiver extends BroadcastReceiver {
     private static final String TAG = "ReminderReceiver";
     private static final String CHANNEL_ID = "task_reminder_channel";
+    private static final long REPEAT_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+    private static final int MAX_ATTEMPTS = 3;
 
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "=== REMINDER RECEIVER TRIGGERED ===");
 
-        // Get the correct extras that were sent from ReminderManager
         long taskId = intent.getLongExtra("task_id", -1);
         String title = intent.getStringExtra("title");
         String description = intent.getStringExtra("description");
 
-        Log.d(TAG, "Received task ID: " + taskId);
-        Log.d(TAG, "Received title: " + title);
-        Log.d(TAG, "Received description: " + description);
 
-        if (title == null || title.isEmpty()) {
-            Log.e(TAG, "Title is null or empty! Cannot show notification");
-            title = "Task Reminder";
+        boolean isRepeatingAlarm = intent.getBooleanExtra("is_repeating_alarm", false);
+
+        if (taskId == -1) {
+            Log.e(TAG, "Received invalid task ID.");
+            return;
         }
 
-        if (description == null) {
-            description = "You have a task reminder";
+        DatabaseHelper dbHelper = new DatabaseHelper(context);
+        TaskManager taskManager = TaskManager.getInstance(context);
+        ReminderManager reminderManager = new ReminderManager(context);
+
+
+        Task currentTask = dbHelper.getTask(taskId);
+
+        if (currentTask == null) {
+            Log.w(TAG, "Task not found in DB, cancelling future alarms for ID: " + taskId);
+
+            reminderManager.cancelReminder(taskId);
+            return;
         }
+
+
+        if (!currentTask.getStatus().equals("running")) {
+            Log.d(TAG, "Task status changed to " + currentTask.getStatus() + ". Cancelling reminder sequence.");
+            reminderManager.cancelReminder(currentTask);
+            return;
+        }
+
 
         showNotification(context, title, description, taskId);
+
+
+        if (isRepeatingAlarm) {
+            int currentAttempts = dbHelper.incrementReminderAttempt(taskId);
+
+            if (currentAttempts < MAX_ATTEMPTS) {
+                // Schedule the next alarm
+                long nextAlarmTime = System.currentTimeMillis() + REPEAT_INTERVAL_MS;
+                String nextTitle = currentTask.getTitle() + " (Attempt " + (currentAttempts + 1) + "/" + MAX_ATTEMPTS + ")";
+                reminderManager.scheduleNextReminder(taskId, nextTitle, description, nextAlarmTime);
+                Log.d(TAG, "Scheduled next reminder for attempt " + (currentAttempts + 1));
+            } else {
+
+                Log.d(TAG, "Max attempts reached for task " + taskId + ". Marking as unfinished.");
+
+
+                currentTask.setStatus("unfinished");
+                taskManager.updateTask(currentTask);
+
+                // Cancel the entire sequence and delete state
+                reminderManager.cancelReminder(currentTask);
+            }
+        }
     }
 
     private void showNotification(Context context, String title, String description, long taskId) {
-        Log.d(TAG, "Showing notification: " + title);
-
         NotificationManager notificationManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (notificationManager == null) {
-            Log.e(TAG, "NotificationManager is null!");
             return;
         }
 
         createNotificationChannel(notificationManager);
 
-        // Create intent to open app when notification is clicked
         Intent appIntent = new Intent(context, MainActivity.class);
         appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -62,22 +99,28 @@ public class ReminderReceiver extends BroadcastReceiver {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        // Build notification
+
+        NotificationSettings settings = new DatabaseHelper(context).getNotificationSettings();
+        android.net.Uri soundUri = NotificationHelper.getSoundUri(context, settings.getNotificationSound());
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.outline_add_alert_24) // Make sure you have this icon
-                .setContentTitle("Task Reminder")
+                .setSmallIcon(R.drawable.outline_add_alert_24)
+                .setContentTitle("🚨 Task Reminder")
                 .setContentText(title)
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText(title + "\n\n" + description))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setDefaults(NotificationCompat.DEFAULT_ALL); // Sound, vibration, etc.
+                .setAutoCancel(true);
 
-        // Show notification with unique ID
-        int notificationId = (int) System.currentTimeMillis();
+        if (soundUri != null) {
+            builder.setSound(soundUri);
+        } else {
+            builder.setDefaults(NotificationCompat.DEFAULT_VIBRATE);
+        }
+
+        int notificationId = (int) taskId;
         notificationManager.notify(notificationId, builder.build());
-        Log.d(TAG, "✓ Notification displayed with ID: " + notificationId);
     }
 
     private void createNotificationChannel(NotificationManager notificationManager) {
@@ -93,7 +136,6 @@ public class ReminderReceiver extends BroadcastReceiver {
             channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
 
             notificationManager.createNotificationChannel(channel);
-            Log.d(TAG, "Notification channel created");
         }
     }
 }

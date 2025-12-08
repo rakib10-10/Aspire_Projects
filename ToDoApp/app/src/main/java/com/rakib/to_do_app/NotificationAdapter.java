@@ -53,7 +53,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             textTitle.setText(notification.getTitle());
             textMessage.setText(notification.getMessage());
 
-            // Format timestamp
             String timeString = dateFormat.format(new Date(notification.getTimestamp()));
             textTime.setText(timeString);
         }

@@ -15,21 +15,18 @@ import android.widget.Toast;
 public class MainActivity extends AppCompatActivity {
 
     BottomNavigationView bottomNavigationView;
-    private DatabaseHelper dbHelper; // Declare DB Helper
+    private DatabaseHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        // --- THEME PERSISTENCE FIX: Apply saved theme BEFORE super.onCreate ---
-        dbHelper = new DatabaseHelper(this); // Initialize DB Helper
+        dbHelper = new DatabaseHelper(this);
         boolean isDarkMode = dbHelper.isDarkModeEnabled();
         int mode = isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO;
 
-        // Apply the mode if it's different from the current default
         if (AppCompatDelegate.getDefaultNightMode() != mode) {
             AppCompatDelegate.setDefaultNightMode(mode);
         }
-        // --- END THEME FIX ---
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -37,13 +34,12 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
-        // Set HomeFragment as default when app starts
         if (savedInstanceState == null) {
             getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
-            bottomNavigationView.setSelectedItemId(R.id.nav_home); // Highlight home in navigation
+            bottomNavigationView.setSelectedItemId(R.id.nav_home);
         }
 
         bottomNavigationView.setOnItemSelectedListener(new BottomNavigationView.OnItemSelectedListener() {

@@ -53,12 +53,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.txtDescription.setText(task.getDescription());
         holder.txtDate.setText(task.getDate());
 
-        // Display Priority
         if (task.getPriority() != null && !task.getPriority().isEmpty()) {
             holder.txtPriority.setText(task.getPriority());
             holder.txtPriority.setVisibility(View.VISIBLE);
 
-            // Setting priority background color based on priority level
             int priorityColor = getPriorityColor(holder.itemView.getContext(), task.getPriority());
             GradientDrawable priorityBg = new GradientDrawable();
             priorityBg.setColor(priorityColor);
@@ -94,7 +92,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
 
-        // Display Color Tag
         if (task.getColorTag() != null && !task.getColorTag().isEmpty() && holder.colorDot != null) {
             try {
                 int color = Color.parseColor(task.getColorTag());
@@ -103,8 +100,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 dotBg.setShape(GradientDrawable.OVAL);
                 dotBg.setColor(color);
 
-
-                // dotBg.setSize(16, 16);
 
                 holder.colorDot.setBackground(dotBg);
                 holder.colorDot.setVisibility(View.VISIBLE);
@@ -204,7 +199,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
         switch (sortBy.toLowerCase()) {
             case "date":
-                // Sort by Date
                 comparator = (t1, t2) -> {
                     try {
                         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault());
@@ -212,27 +206,24 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                         Date d2 = sdf.parse(t2.getDate());
                         return d1.compareTo(d2);
                     } catch (Exception e) {
-                        return 0; // Don't sort if dates are invalid
+                        return 0;
                     }
                 };
                 break;
 
             case "priority":
-                // Sorting via Priority: High > Medium  > Low
                 comparator = (t1, t2) -> {
                     int p1 = getPriorityValue(t1.getPriority());
                     int p2 = getPriorityValue(t2.getPriority());
-                    return Integer.compare(p2, p1); // p2, p1 for High to Low
+                    return Integer.compare(p2, p1);
                 };
                 break;
 
             case "category":
-                // Sorting alphabetically by category
                 comparator = Comparator.comparing(Task::getCategory, Comparator.nullsLast(String::compareToIgnoreCase));
                 break;
 
             default:
-                // Default sort (e.g., by creation date/ID)
                 comparator = Comparator.comparing(Task::getId);
                 break;
         }
@@ -241,7 +232,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         notifyDataSetChanged();
     }
 
-    // Helper method for Priority
     private int getPriorityValue(String priority) {
         if (priority == null) return 0;
         switch (priority.toLowerCase()) {
@@ -255,7 +245,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public static class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView txtTitle, txtDescription, txtDate, txtCategory, txtTime, txtStatus, txtPriority;
         ImageView btnMore;
-        View colorDot; // Added colorDot view
+        View colorDot;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -267,7 +257,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             txtStatus = itemView.findViewById(R.id.taskStatusText);
             txtPriority = itemView.findViewById(R.id.txtPriority);
             btnMore = itemView.findViewById(R.id.btnMoreOptions);
-            colorDot = itemView.findViewById(R.id.colorDot); // FIXED: Initialize colorDot
+            colorDot = itemView.findViewById(R.id.colorDot);
         }
     }
 }

@@ -99,6 +99,7 @@ public class CalendarFragment extends Fragment {
         recyclerTasks.setAdapter(taskAdapter);
     }
 
+
     private void setTaskReminder(Task task) {
         ReminderManager reminderManager = new ReminderManager(requireContext());
 
@@ -106,23 +107,14 @@ public class CalendarFragment extends Fragment {
             AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
             if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
 
-                reminderManager.setInexactReminder(
-                        task.getId(),
-                        task.getTitle(),
-                        task.getDescription(),
-                        task.getDueDate().getTime()
-                );
+
+                reminderManager.setInexactReminder(task);
                 return;
             }
         }
 
-        //
-        reminderManager.setReminder(
-                task.getId(),
-                task.getTitle(),
-                task.getDescription(),
-                task.getDueDate().getTime()
-        );
+
+        reminderManager.setReminder(task);
     }
 
     private void setupDatePicker() {
@@ -143,7 +135,6 @@ public class CalendarFragment extends Fragment {
     }
 
     private void setupClickListeners() {
-        // calls the dialog method when the FAB is clicked
         btnAddTask.setOnClickListener(v -> openAddTaskDialog());
     }
 
@@ -180,10 +171,7 @@ public class CalendarFragment extends Fragment {
 
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-                // Removing redundant save logic. The dialog now saves the task itself.
 
-
-                // Refresh local list
                 taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                 filterTasksByDate();
 
@@ -199,14 +187,11 @@ public class CalendarFragment extends Fragment {
                 .setTitle("Delete Task")
                 .setMessage("Are you sure you want to delete this task? This will also cancel the reminder.")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                    // Cancel reminder first
                     ReminderManager reminderManager = new ReminderManager(getContext());
                     reminderManager.cancelReminder(task);
 
-                    // Remove from TaskManager
                     TaskManager.getInstance(requireContext()).removeTask(task);
 
-                    // Refresh local list
                     taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                     filterTasksByDate();
 
@@ -220,7 +205,6 @@ public class CalendarFragment extends Fragment {
         AddTaskDialog dialog = new AddTaskDialog();
 
         Bundle args = new Bundle();
-        // Pass task ID for update query
         args.putLong("task_id", task.getId());
         args.putString("title", task.getTitle());
         args.putString("description", task.getDescription());
@@ -236,9 +220,7 @@ public class CalendarFragment extends Fragment {
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-                //  Removing redundant update logic. The dialog now updates the task itself.
 
-                // Refresh local list
                 taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                 filterTasksByDate();
 
@@ -275,7 +257,6 @@ public class CalendarFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Refresh tasks from TaskManager
         taskList = TaskManager.getInstance(requireContext()).getAllTasks();
         filterTasksByDate();
     }

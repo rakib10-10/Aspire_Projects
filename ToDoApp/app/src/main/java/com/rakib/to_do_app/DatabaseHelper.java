@@ -12,21 +12,18 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DatabaseHelper";
 
-    // Database Information - INCREASE VERSION to 4
     private static final String DATABASE_NAME = "TodoApp.db";
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 6; // INCREMENTED VERSION
 
-    // Table Names
     private static final String TABLE_TASKS = "tasks";
     private static final String TABLE_USER_PROFILE = "user_profile";
     private static final String TABLE_NOTIFICATION_SETTINGS = "notification_settings";
     private static final String TABLE_REMINDERS = "reminders";
+    private static final String TABLE_REMINDER_STATE = "reminder_state";
 
-    // Common column names
     private static final String KEY_ID = "id";
     private static final String KEY_CREATED_AT = "created_at";
 
-    // Tasks Table - column names
     private static final String KEY_TASK_TITLE = "title";
     private static final String KEY_TASK_DESCRIPTION = "description";
     private static final String KEY_TASK_DATE = "date";
@@ -37,29 +34,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_TASK_PRIORITY = "priority";
     private static final String KEY_TASK_COLOR_TAG = "color_tag";
 
-    // User Profile Table - column names
     private static final String KEY_PROFILE_NAME = "name";
     private static final String KEY_PROFILE_EMAIL = "email";
     private static final String KEY_PROFILE_PHONE = "phone";
     private static final String KEY_PROFILE_BIO = "bio";
     private static final String KEY_PROFILE_IMAGE_BASE64 = "profile_image_base64";
 
-    // Notification Settings Table - column names (ADDED DARK MODE)
     private static final String KEY_NOTIF_TASK_REMINDERS = "task_reminders_enabled";
     private static final String KEY_NOTIF_DUE_DATE_ALERTS = "due_date_alerts_enabled";
     private static final String KEY_NOTIF_DAILY_SUMMARY = "daily_summary_enabled";
     private static final String KEY_NOTIF_DEFAULT_REMINDER_TIME = "default_reminder_time";
     private static final String KEY_NOTIF_SOUND = "notification_sound";
-    private static final String KEY_DARK_MODE = "dark_mode_enabled"; // NEW COLUMN
+    private static final String KEY_DARK_MODE = "dark_mode_enabled";
+    private static final String KEY_CUSTOM_RINGTONE_URI = "custom_ringtone_uri";
 
-    // Reminders Table - column names
     private static final String KEY_REMINDER_TASK_ID = "task_id";
     private static final String KEY_REMINDER_TITLE = "title";
     private static final String KEY_REMINDER_DESCRIPTION = "description";
     private static final String KEY_REMINDER_TIME = "reminder_time";
-    private static final String KEY_CUSTOM_RINGTONE_URI = "custom_ringtone_uri";
 
-    // Table Create Statements - UPDATED to include dark_mode_enabled
+    // Reminder State Table - NEW Columns
+    private static final String KEY_STATE_TASK_ID = "task_id";
+    private static final String KEY_STATE_ATTEMPTS = "attempts";
+    private static final String KEY_STATE_STATUS = "status";
+
     private static final String CREATE_TABLE_TASKS = "CREATE TABLE " + TABLE_TASKS + "("
             + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_TASK_TITLE + " TEXT,"
@@ -91,7 +89,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_NOTIF_DAILY_SUMMARY + " INTEGER DEFAULT 0,"
             + KEY_NOTIF_DEFAULT_REMINDER_TIME + " TEXT DEFAULT '15 minutes before',"
             + KEY_NOTIF_SOUND + " TEXT DEFAULT 'Default',"
-            + KEY_DARK_MODE + " INTEGER DEFAULT 0," // NEW COLUMN
+            + KEY_DARK_MODE + " INTEGER DEFAULT 0,"
             + KEY_CUSTOM_RINGTONE_URI + " TEXT DEFAULT '',"
             + KEY_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP"
             + ")";
@@ -105,64 +103,49 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP"
             + ")";
 
+    private static final String CREATE_TABLE_REMINDER_STATE = "CREATE TABLE " + TABLE_REMINDER_STATE + "("
+            + KEY_STATE_TASK_ID + " INTEGER PRIMARY KEY,"
+            + KEY_STATE_ATTEMPTS + " INTEGER DEFAULT 0,"
+            + KEY_STATE_STATUS + " TEXT DEFAULT 'running',"
+            + KEY_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP"
+            + ")";
+
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        Log.d(TAG, "Creating database tables...");
         db.execSQL(CREATE_TABLE_TASKS);
         db.execSQL(CREATE_TABLE_USER_PROFILE);
         db.execSQL(CREATE_TABLE_NOTIFICATION_SETTINGS);
         db.execSQL(CREATE_TABLE_REMINDERS);
+        db.execSQL(CREATE_TABLE_REMINDER_STATE);
 
-        // Inserting default notification settings
         insertDefaultNotificationSettings(db);
-        Log.d(TAG, "Database tables created successfully");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        Log.d(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion);
-
-        // Handle migrations for each version incrementally
         for (int version = oldVersion + 1; version <= newVersion; version++) {
             switch (version) {
                 case 4:
-                    // Add dark_mode_enabled column
                     try {
                         db.execSQL("ALTER TABLE " + TABLE_NOTIFICATION_SETTINGS +
                                 " ADD COLUMN " + KEY_DARK_MODE + " INTEGER DEFAULT 0");
-                        Log.d(TAG, "Added dark_mode_enabled column");
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error adding dark_mode_enabled: " + e.getMessage());
-                    }
+                    } catch (Exception e) { }
                     break;
                 case 5:
-                    // Add custom_ringtone_uri column
                     try {
                         db.execSQL("ALTER TABLE " + TABLE_NOTIFICATION_SETTINGS +
                                 " ADD COLUMN " + KEY_CUSTOM_RINGTONE_URI + " TEXT DEFAULT ''");
-                        Log.d(TAG, "Added custom_ringtone_uri column");
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error adding custom_ringtone_uri: " + e.getMessage());
-                    }
+                    } catch (Exception e) { }
                     break;
-            }
-        }
-
-        // For major version changes (from before version 3)
-        if (oldVersion < 3) {
-            Log.w(TAG, "Dropping all tables - this will cause data loss!");
-            try {
-                db.execSQL("DROP TABLE IF EXISTS " + TABLE_TASKS);
-                db.execSQL("DROP TABLE IF EXISTS " + TABLE_USER_PROFILE);
-                db.execSQL("DROP TABLE IF EXISTS " + TABLE_NOTIFICATION_SETTINGS);
-                db.execSQL("DROP TABLE IF EXISTS " + TABLE_REMINDERS);
-                onCreate(db);
-            } catch (Exception e) {
-                Log.e(TAG, "Error dropping tables: " + e.getMessage());
+                case 6:
+                    try {
+                        db.execSQL(CREATE_TABLE_REMINDER_STATE);
+                    } catch (Exception e) { }
+                    break;
             }
         }
     }
@@ -174,52 +157,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_NOTIF_DAILY_SUMMARY, 0);
         values.put(KEY_NOTIF_DEFAULT_REMINDER_TIME, "15 minutes before");
         values.put(KEY_NOTIF_SOUND, "Default");
-        values.put(KEY_DARK_MODE, 0);// Default: light mode
+        values.put(KEY_DARK_MODE, 0);
         values.put(KEY_CUSTOM_RINGTONE_URI, "");
 
         db.insert(TABLE_NOTIFICATION_SETTINGS, null, values);
-        Log.d(TAG, "Default notification settings inserted with dark_mode = 0");
-
     }
 
-    // ==================== DARK MODE METHODS ====================
-
-    /**
-     * Get dark mode setting
-     */
     public boolean isDarkModeEnabled() {
         SQLiteDatabase db = this.getReadableDatabase();
         boolean darkModeEnabled = false;
-
         Cursor cursor = db.query(TABLE_NOTIFICATION_SETTINGS,
                 new String[]{KEY_DARK_MODE}, null, null, null, null, null);
 
         if (cursor.moveToFirst()) {
             darkModeEnabled = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_DARK_MODE)) == 1;
         }
-
         cursor.close();
         db.close();
-
-        Log.d(TAG, "Dark mode retrieved: " + darkModeEnabled);
         return darkModeEnabled;
     }
 
-    /**
-     * Set dark mode setting
-     */
     public void setDarkModeEnabled(boolean enabled) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(KEY_DARK_MODE, enabled ? 1 : 0);
-
         db.update(TABLE_NOTIFICATION_SETTINGS, values, null, null);
         db.close();
-
-        Log.d(TAG, "Dark mode set to: " + enabled);
     }
 
-    // ==================== TASK METHODS ====================
     public long addTask(Task task) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -235,9 +200,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         long id = db.insert(TABLE_TASKS, null, values);
         db.close();
-
-        Log.d(TAG, "Task added. ID: " + id + ", Title: " + task.getTitle() + ", Color: " + task.getColorTag());
         return id;
+    }
+
+    public Task getTask(long id) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Task task = null;
+        Cursor cursor = db.query(TABLE_TASKS, null, KEY_ID + "=?", new String[]{String.valueOf(id)}, null, null, null);
+
+        if (cursor.moveToFirst()) {
+            task = new Task();
+            task.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)));
+            task.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_TITLE)));
+            task.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_DESCRIPTION)));
+            task.setDate(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_DATE)));
+            task.setStartTime(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_START_TIME)));
+            task.setEndTime(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_END_TIME)));
+            task.setCategory(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_CATEGORY)));
+            task.setStatus(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_STATUS)));
+            task.setPriority(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_PRIORITY)));
+            task.setColorTag(cursor.getString(cursor.getColumnIndexOrThrow(KEY_TASK_COLOR_TAG)));
+        }
+
+        cursor.close();
+        db.close();
+        return task;
     }
 
     public List<Task> getAllTasks() {
@@ -286,8 +273,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         int rowsAffected = db.update(TABLE_TASKS, values, KEY_ID + " = ?",
                 new String[]{String.valueOf(task.getId())});
         db.close();
-
-        Log.d(TAG, "Task updated, rows affected: " + rowsAffected);
         return rowsAffected;
     }
 
@@ -295,14 +280,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_TASKS, KEY_ID + " = ?", new String[]{String.valueOf(taskId)});
         db.close();
-        Log.d(TAG, "Task deleted with ID: " + taskId);
     }
 
-    // ==================== USER PROFILE METHODS ====================
     public long saveUserProfile(UserProfile profile) {
         SQLiteDatabase db = this.getWritableDatabase();
 
-        // checking if profile exists
         Cursor cursor = db.query(TABLE_USER_PROFILE, null, null, null, null, null, null);
         boolean profileExists = cursor.getCount() > 0;
         cursor.close();
@@ -322,7 +304,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         db.close();
-        Log.d(TAG, "User profile saved, result: " + result);
         return result;
     }
 
@@ -341,7 +322,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             profile.setBio(cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_BIO)));
             profile.setProfileImageBase64(cursor.getString(cursor.getColumnIndexOrThrow(KEY_PROFILE_IMAGE_BASE64)));
         } else {
-            // Create default profile if none exists
             profile = createDefaultProfile();
         }
 
@@ -363,7 +343,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return defaultProfile;
     }
 
-    // ==================== NOTIFICATION SETTINGS METHODS ====================
     public NotificationSettings getNotificationSettings() {
         SQLiteDatabase db = this.getReadableDatabase();
         NotificationSettings settings = new NotificationSettings();
@@ -376,7 +355,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             settings.setDailySummaryEnabled(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_NOTIF_DAILY_SUMMARY)) == 1);
             settings.setDefaultReminderTime(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTIF_DEFAULT_REMINDER_TIME)));
             settings.setNotificationSound(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTIF_SOUND)));
-            // ADDED: Dark mode setting
             settings.setDarkModeEnabled(cursor.getInt(cursor.getColumnIndexOrThrow(KEY_DARK_MODE)) == 1);
             settings.setCustomRingtoneUri(cursor.getString(cursor.getColumnIndexOrThrow(KEY_CUSTOM_RINGTONE_URI)));
 
@@ -399,10 +377,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         db.update(TABLE_NOTIFICATION_SETTINGS, values, null, null);
         db.close();
-        Log.d(TAG, "Notification setting updated: " + key + " = " + value);
     }
 
-    // ==================== REMINDER METHODS ====================
+    public void saveCustomRingtoneUri(String uri) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_CUSTOM_RINGTONE_URI, uri);
+        values.put(KEY_NOTIF_SOUND, "Custom");
+
+        db.update(TABLE_NOTIFICATION_SETTINGS, values, null, null);
+        db.close();
+    }
+
     public long saveReminder(long taskId, String title, String description, long reminderTime) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -413,8 +399,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         long id = db.insert(TABLE_REMINDERS, null, values);
         db.close();
-
-        Log.d(TAG, "Reminder saved with ID: " + id);
         return id;
     }
 
@@ -423,18 +407,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.delete(TABLE_REMINDERS, KEY_REMINDER_TASK_ID + " = ?",
                 new String[]{String.valueOf(taskId)});
         db.close();
-        Log.d(TAG, "Reminder deleted for task ID: " + taskId);
-    }
-    public void saveCustomRingtoneUri(String uri) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(KEY_CUSTOM_RINGTONE_URI, uri);
-        values.put(KEY_NOTIF_SOUND, "Custom"); // Set the sound type to "Custom"
-
-        db.update(TABLE_NOTIFICATION_SETTINGS, values, null, null);
-        db.close();
-
-        Log.d(TAG, "Custom ringtone URI saved: " + uri);
     }
 
     public List<Reminder> getAllReminders() {
@@ -460,5 +432,47 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return reminders;
+    }
+
+    // ==================== REMINDER STATE METHODS ====================
+
+    public void resetReminderState(long taskId, String initialStatus) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_STATE_ATTEMPTS, 1);
+        values.put(KEY_STATE_STATUS, initialStatus);
+
+        int rows = db.update(TABLE_REMINDER_STATE, values, KEY_STATE_TASK_ID + " = ?", new String[]{String.valueOf(taskId)});
+
+        if (rows == 0) {
+            values.put(KEY_STATE_TASK_ID, taskId);
+            db.insert(TABLE_REMINDER_STATE, null, values);
+        }
+        db.close();
+    }
+
+    public int incrementReminderAttempt(long taskId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int attempts = 0;
+
+        Cursor cursor = db.query(TABLE_REMINDER_STATE, new String[]{KEY_STATE_ATTEMPTS}, KEY_STATE_TASK_ID + "=?", new String[]{String.valueOf(taskId)}, null, null, null);
+        if (cursor.moveToFirst()) {
+            attempts = cursor.getInt(cursor.getColumnIndexOrThrow(KEY_STATE_ATTEMPTS));
+        }
+        cursor.close();
+
+        attempts++;
+        ContentValues values = new ContentValues();
+        values.put(KEY_STATE_ATTEMPTS, attempts);
+
+        db.update(TABLE_REMINDER_STATE, values, KEY_STATE_TASK_ID + " = ?", new String[]{String.valueOf(taskId)});
+        db.close();
+        return attempts;
+    }
+
+    public void deleteReminderState(long taskId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(TABLE_REMINDER_STATE, KEY_STATE_TASK_ID + " = ?", new String[]{String.valueOf(taskId)});
+        db.close();
     }
 }

@@ -33,24 +33,20 @@ public class NotificationsFragment extends Fragment {
 
     private static final String TAG = "NotificationsFragment";
 
-    // UI Components
     private SwitchMaterial switchTaskReminders, switchDueDateAlerts, switchDailySummary;
     private Spinner spinnerReminderTime, spinnerNotificationSound;
     private MaterialToolbar toolbar;
     private SwitchMaterial switchDarkTheme;
 
-    // Data
     private NotificationAdapter notificationAdapter;
     private List<NotificationItem> notificationList;
 
-    // Dynamic list for sounds to allow adding custom names
     private List<String> soundOptionsList;
     private ArrayAdapter<String> soundAdapter;
 
     private DatabaseHelper dbHelper;
     private ActivityResultLauncher<Intent> ringtonePickerLauncher;
 
-    // STRICT FLAG: Only allow logic if user physically touched the spinner
     private boolean isUserTouched = false;
 
     @Override
@@ -63,17 +59,13 @@ public class NotificationsFragment extends Fragment {
         initializeViews(view);
         setupRingtonePickerLauncher();
 
-        // 1. Initialize Spinner Data
         initSpinnerData();
 
-        // 2. Load Settings (programmatically set selection)
         loadNotificationSettings();
 
-        // 3. Setup Listeners (After loading, to avoid initial trigger issues)
         setupSpinnerListeners();
         setupSwitches();
 
-        // Setup simple list (no RecyclerView logic needed based on previous request)
         notificationList = new ArrayList<>();
 
         return view;
@@ -82,7 +74,6 @@ public class NotificationsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Reset touch flag to ensure no auto-firing on resume
         isUserTouched = false;
     }
 
@@ -97,18 +88,13 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void initSpinnerData() {
-        // Reminder Time Adapter (Static)
         ArrayAdapter<CharSequence> timeAdapter = ArrayAdapter.createFromResource(
                 requireContext(), R.array.reminder_time_options, android.R.layout.simple_spinner_item);
         timeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerReminderTime.setAdapter(timeAdapter);
 
-        // Sound Adapter (Dynamic ArrayList)
         String[] defaults = getResources().getStringArray(R.array.notification_sound_options);
         soundOptionsList = new ArrayList<>(Arrays.asList(defaults));
-
-        // Ensure "Add New Sound..." is at the end or specific position if needed.
-        // Assuming "Custom..." or similar is in the XML array.
 
         soundAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, soundOptionsList);
         soundAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -124,41 +110,32 @@ public class NotificationsFragment extends Fragment {
                         if (uri != null) {
                             String uriString = uri.toString();
 
-                            // 1. Get Real Name (e.g., "Ding Dong")
                             Ringtone ringtone = RingtoneManager.getRingtone(requireContext(), uri);
                             String ringtoneTitle = ringtone.getTitle(requireContext());
 
-                            // 2. Add to list if not present
                             if (!soundOptionsList.contains(ringtoneTitle)) {
-                                // Add before the last item if the last item is "Add Custom..."
-                                // Otherwise just add it
-                                soundOptionsList.add(0, ringtoneTitle); // Add to top for visibility
+                                soundOptionsList.add(0, ringtoneTitle);
                                 soundAdapter.notifyDataSetChanged();
                             }
 
-                            // 3. Save to DB
                             dbHelper.saveCustomRingtoneUri(uriString);
                             saveNotificationSetting("notificationSound", ringtoneTitle);
 
-                            // 4. Select it programmatically
                             setSpinnerSelection(spinnerNotificationSound, ringtoneTitle);
 
-                            // 5. Test it
                             testNotificationSound(uriString);
 
                             Toast.makeText(requireContext(), ringtoneTitle + " set!", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        // If cancelled, reset selection to what it was in DB
                         loadNotificationSettings();
                     }
-                    isUserTouched = false; // Reset flag
+                    isUserTouched = false;
                 }
         );
     }
 
     private void setupSpinnerListeners() {
-        // Touch Listener to distinguish programmatic vs user changes
         View.OnTouchListener touchListener = (v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 isUserTouched = true;
@@ -168,7 +145,6 @@ public class NotificationsFragment extends Fragment {
         spinnerReminderTime.setOnTouchListener(touchListener);
         spinnerNotificationSound.setOnTouchListener(touchListener);
 
-        // Reminder Time
         spinnerReminderTime.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -180,23 +156,18 @@ public class NotificationsFragment extends Fragment {
             public void onNothingSelected(AdapterView<?> parent) {}
         });
 
-        // Notification Sound
         spinnerNotificationSound.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // BLOCK EVERYTHING if user didn't touch it
                 if (!isUserTouched) return;
 
                 String selectedSound = parent.getItemAtPosition(position).toString();
 
-                // Check for the "trigger" item (e.g., "Custom..." from your XML array)
                 if (selectedSound.equals("Custom...") || selectedSound.equals("Add New Sound")) {
                     launchRingtonePicker();
                 } else {
-                    // It's a standard or previously added custom sound
                     saveNotificationSetting("notificationSound", selectedSound);
 
-                    // If it matches the saved custom name, use the custom URI, else standard logic
                     NotificationSettings settings = dbHelper.getNotificationSettings();
                     String customUri = settings.getCustomRingtoneUri();
 
@@ -207,7 +178,6 @@ public class NotificationsFragment extends Fragment {
                     }
                 }
 
-                // Reset flag so rotation/reloads don't trigger this again
                 isUserTouched = false;
             }
             @Override
@@ -231,7 +201,6 @@ public class NotificationsFragment extends Fragment {
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
 
-        // Pre-select current
         NotificationSettings settings = dbHelper.getNotificationSettings();
         String customUri = settings.getCustomRingtoneUri();
         if (customUri != null && !customUri.isEmpty()) {
@@ -244,24 +213,19 @@ public class NotificationsFragment extends Fragment {
     private void loadNotificationSettings() {
         NotificationSettings settings = dbHelper.getNotificationSettings();
 
-        // Switches
         switchTaskReminders.setChecked(settings.isTaskRemindersEnabled());
         switchDueDateAlerts.setChecked(settings.isDueDateAlertsEnabled());
         switchDailySummary.setChecked(settings.isDailySummaryEnabled());
 
-        // Dark Theme (Detach listener to prevent loop)
         switchDarkTheme.setOnCheckedChangeListener(null);
         switchDarkTheme.setChecked(settings.isDarkModeEnabled());
 
-        // Reminder Time Spinner
         setSpinnerSelection(spinnerReminderTime, settings.getDefaultReminderTime());
 
-        // Sound Spinner Logic
         String savedSoundName = settings.getNotificationSound();
 
-        // If the saved sound isn't in the default list (meaning it's a custom name), add it
         if (savedSoundName != null && !savedSoundName.isEmpty() && !soundOptionsList.contains(savedSoundName)) {
-            soundOptionsList.add(0, savedSoundName); // Add to list
+            soundOptionsList.add(0, savedSoundName);
             soundAdapter.notifyDataSetChanged();
         }
 
@@ -278,26 +242,22 @@ public class NotificationsFragment extends Fragment {
                 return;
             }
         }
-        // If not found, default to 0
         if (adapter.getCount() > 0) spinner.setSelection(0);
     }
 
     private void setupSwitches() {
-        // ... (Task switches remain same) ...
         switchTaskReminders.setOnCheckedChangeListener((v, c) -> saveNotificationSetting("taskRemindersEnabled", c));
         switchDueDateAlerts.setOnCheckedChangeListener((v, c) -> saveNotificationSetting("dueDateAlertsEnabled", c));
         switchDailySummary.setOnCheckedChangeListener((v, c) -> saveNotificationSetting("dailySummaryEnabled", c));
 
-        // Dark Theme
         switchDarkTheme.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (!buttonView.isPressed()) return; // Only trigger if user pressed
+            if (!buttonView.isPressed()) return;
 
             dbHelper.setDarkModeEnabled(isChecked);
             saveNotificationSetting("dark_mode_enabled", isChecked);
             int mode = isChecked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO;
             AppCompatDelegate.setDefaultNightMode(mode);
 
-            // Recreate logic
             buttonView.postDelayed(() -> {
                 if (getActivity() != null) getActivity().recreate();
             }, 100);

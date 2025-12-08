@@ -24,7 +24,6 @@ public class PomodoroService extends Service {
     private final IBinder binder = new LocalBinder();
     private CountDownTimer countDownTimer;
 
-    // Timer state
     private long startTimeInMillis = 25 * 60 * 1000;
     private long timeLeftInMillis = startTimeInMillis;
     private boolean isTimerRunning = false;
@@ -72,7 +71,6 @@ public class PomodoroService extends Service {
         timeLeftInMillis = durationInMillis;
         isTimerRunning = true;
 
-        // Start foreground service
         startForeground(NOTIFICATION_ID, createNotification("Focusing...", timeLeftInMillis));
 
         countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
@@ -93,9 +91,7 @@ public class PomodoroService extends Service {
                 if (callback != null) {
                     callback.onTimerFinish();
                 }
-                // Play alarm sound
                 playAlarm();
-                // Stop foreground service
                 stopForeground(false);
             }
         }.start();
@@ -191,7 +187,6 @@ public class PomodoroService extends Service {
 
     private void playAlarm() {
         // TODO: Implement alarm sound
-        // You can use MediaPlayer or Notification sound
     }
 
     @Override

@@ -28,19 +28,18 @@ public class HomeFragment extends Fragment {
     private Button btnMyTasks, btnInProgress, btnCompleted;
     private RecyclerView recyclerTasks;
     private TextView txtEmptyState;
-    private TextView tvUserNameGreeting; // <--- 1. DECLARE NEW TEXTVIEW
+    private TextView tvUserNameGreeting;
     private TaskAdapter taskAdapter;
     private List<Task> allTasks = new ArrayList<>();
     private String currentTab = "all";
     private String currentSearchQuery = "";
     private String currentSortBy = "date";
     private TaskManager taskManager;
-    private DatabaseHelper dbHelper; // <--- DECLARE DB HELPER
+    private DatabaseHelper dbHelper;
     private SearchView searchTaskCategory;
     private ImageButton btnSort;
 
     public HomeFragment() {
-        // Required empty public constructor
     }
 
     @Override
@@ -49,11 +48,11 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         taskManager = TaskManager.getInstance(requireContext());
-        dbHelper = new DatabaseHelper(requireContext()); // <--- INITIALIZE DB HELPER
+        dbHelper = new DatabaseHelper(requireContext());
 
         initializeViews(view);
 
-        loadUserName(); // <--- 4. LOAD USER NAME
+        loadUserName();
 
         setupTaskAdapter();
         setupClickListeners();
@@ -67,7 +66,6 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Ensure the initial tab state is set after the view is created
         if (currentTab.equals("all")) {
             selectTab(btnMyTasks);
         }
@@ -83,16 +81,13 @@ public class HomeFragment extends Fragment {
         searchTaskCategory = view.findViewById(R.id.searchTaskCategory);
         btnSort = view.findViewById(R.id.btnSort);
 
-        // 2. INITIALIZE NEW TEXTVIEW (using assumed ID)
         tvUserNameGreeting = view.findViewById(R.id.tvUserNameGreeting);
     }
 
-    // 3. METHOD TO LOAD USER NAME
     private void loadUserName() {
         UserProfile userProfile = dbHelper.getUserProfile();
         if (userProfile != null && tvUserNameGreeting != null) {
             String name = userProfile.getName();
-            // Show only the first name for a friendlier greeting if full name is available
             if (name != null && !name.isEmpty()) {
                 String firstName = name.split(" ")[0];
                 tvUserNameGreeting.setText(firstName + "!");
@@ -164,7 +159,6 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupSearchAndSort() {
-        // 1. SEARCH VIEW SETUP
         searchTaskCategory.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -181,7 +175,6 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        // 2. SORT BUTTON SETUP
         btnSort.setOnClickListener(this::showSortMenu);
     }
 
@@ -239,7 +232,6 @@ public class HomeFragment extends Fragment {
         String status = currentTab;
         String query = currentSearchQuery.toLowerCase(Locale.getDefault());
 
-        // 1. Applying Status Filter
         for (Task task : allTasks) {
             boolean statusMatches = status.equals("all") || (task.getStatus() != null && task.getStatus().equals(status));
             if (statusMatches) {
@@ -247,7 +239,6 @@ public class HomeFragment extends Fragment {
             }
         }
 
-        // 2. Apply Search Filter by Category
         if (!query.isEmpty()) {
             List<Task> searchFiltered = new ArrayList<>();
             for (Task task : filtered) {
@@ -258,13 +249,11 @@ public class HomeFragment extends Fragment {
             filtered = searchFiltered;
         }
 
-        // 3. Apply Sorting
         if (taskAdapter != null) {
             taskAdapter.updateList(filtered);
             taskAdapter.sortList(currentSortBy);
         }
 
-        // 4. Updating Empty State
         if (filtered.isEmpty()) {
             recyclerTasks.setVisibility(View.GONE);
             txtEmptyState.setVisibility(View.VISIBLE);
@@ -334,7 +323,6 @@ public class HomeFragment extends Fragment {
         super.onResume();
         loadTasks();
 
-        // Ensure the name is fresh every time the fragment is resumed
         loadUserName();
     }
 }

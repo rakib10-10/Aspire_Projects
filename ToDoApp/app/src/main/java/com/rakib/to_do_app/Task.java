@@ -20,7 +20,7 @@ public class Task {
         this.id = System.currentTimeMillis();
         this.status = "running";
         this.priority = "Medium";
-        this.colorTag = "#2196F3"; // Default blue color
+        this.colorTag = "#2196F3";
     }
 
     public Task(String title, String description, String date, String startTime, String endTime, String category, String status) {
@@ -33,7 +33,7 @@ public class Task {
         this.category = category;
         this.status = status;
         this.priority = "Medium";
-        this.colorTag = "#2196F3"; // Default blue color
+        this.colorTag = "#2196F3";
     }
 
     public Task(long id, String title, String description, String date, String startTime, String endTime, String category, String status) {
@@ -46,7 +46,7 @@ public class Task {
         this.category = category;
         this.status = status;
         this.priority = "Medium";
-        this.colorTag = "#2196F3"; // Default blue color
+        this.colorTag = "#2196F3";
     }
 
     public Task(String title, String date) {
@@ -55,7 +55,6 @@ public class Task {
         this.date = date;
     }
 
-    // Getters and Setters
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
 

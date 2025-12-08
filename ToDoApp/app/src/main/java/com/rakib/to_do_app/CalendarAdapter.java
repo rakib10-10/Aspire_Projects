@@ -74,7 +74,6 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
             txtDayNumber.setText(String.valueOf(day.getDay()));
             txtDayNumber.setVisibility(View.VISIBLE);
 
-            // Set background based on selection state
             if (isSelected) {
                 txtDayNumber.setBackgroundResource(R.drawable.bg_calendar_day_selected);
                 txtDayNumber.setTextColor(itemView.getContext().getColor(android.R.color.white));
@@ -86,13 +85,11 @@ public class CalendarAdapter extends RecyclerView.Adapter<CalendarAdapter.Calend
                 txtDayNumber.setTextColor(itemView.getContext().getColor(android.R.color.black));
             }
 
-            // Show/hide task indicators
             int taskCount = day.getTaskCount();
             indicator1.setVisibility(taskCount > 0 ? View.VISIBLE : View.GONE);
             indicator2.setVisibility(taskCount > 1 ? View.VISIBLE : View.GONE);
             indicator3.setVisibility(taskCount > 2 ? View.VISIBLE : View.GONE);
 
-            // Set opacity for days from other months
             txtDayNumber.setAlpha(day.isCurrentMonth() ? 1.0f : 0.3f);
 
             itemView.setOnClickListener(v -> {

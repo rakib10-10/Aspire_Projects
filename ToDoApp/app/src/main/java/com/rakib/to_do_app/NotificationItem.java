@@ -4,10 +4,9 @@ public class NotificationItem {
     private String title;
     private String message;
     private long timestamp;
-    private String type; // "task", "due_date", "summary"
+    private String type;
 
     public NotificationItem() {
-        // Default constructor required for Firebase
     }
 
     public NotificationItem(String title, String message, long timestamp, String type) {
@@ -17,7 +16,6 @@ public class NotificationItem {
         this.type = type;
     }
 
-    // Getters and setters
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
 

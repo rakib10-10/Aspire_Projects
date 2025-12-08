@@ -9,7 +9,6 @@ public class UserProfile {
     private String profileImageBase64;
 
     public UserProfile() {
-        // Default constructor
     }
 
     public UserProfile(String userId, String name, String email, String phone, String bio, String profileImageBase64) {
@@ -21,7 +20,6 @@ public class UserProfile {
         this.profileImageBase64 = profileImageBase64;
     }
 
-    // Getters and setters
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
 

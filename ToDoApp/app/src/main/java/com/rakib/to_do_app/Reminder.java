@@ -8,7 +8,6 @@ public class Reminder {
     private long reminderTime;
 
     public Reminder() {
-        // Default constructor
     }
 
     public Reminder(long taskId, String title, String description, long reminderTime) {
@@ -18,7 +17,6 @@ public class Reminder {
         this.reminderTime = reminderTime;
     }
 
-    // Getters and setters
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
 
