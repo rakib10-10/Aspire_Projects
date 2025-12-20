@@ -39,6 +39,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".LoginActivity" android:exported="true"/>
+        <activity android:name=".RegisterActivity" android:exported="false"/>
+
+        <activity
+            android:name=".AddNoteActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <service
             android:name=".PomodoroService"

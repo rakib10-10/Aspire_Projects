@@ -5,11 +5,11 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.DatePicker;
+import android.widget.CalendarView; // Changed from DatePicker
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,10 +29,12 @@ import java.util.Locale;
 
 public class CalendarFragment extends Fragment {
 
-    private DatePicker datePicker;
+    private CalendarView calendarView; // Updated View Type
     private RecyclerView recyclerTasks;
+    private LinearLayout emptyState; // Added Empty State
     private FloatingActionButton btnAddTask;
     private TextView txtSelectedDate, txtTaskCount;
+
     private TaskAdapter taskAdapter;
     private List<Task> taskList = new ArrayList<>();
     private String selectedDateStr;
@@ -49,16 +51,21 @@ public class CalendarFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_calendar, container, false);
 
         initializeViews(view);
+
+        // Load tasks initially
+        taskList = TaskManager.getInstance(requireContext()).getAllTasks();
+
         setupTaskAdapter();
-        setupDatePicker();
+        setupCalendarView(); // Updated method name
         setupClickListeners();
 
         return view;
     }
 
     private void initializeViews(View view) {
-        datePicker = view.findViewById(R.id.datePicker);
+        calendarView = view.findViewById(R.id.calendarView); // Matches new XML ID
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
+        emptyState = view.findViewById(R.id.emptyState); // Matches new XML ID
         btnAddTask = view.findViewById(R.id.btnAddTask);
         txtSelectedDate = view.findViewById(R.id.txtSelectedDate);
         txtTaskCount = view.findViewById(R.id.txtTaskCount);
@@ -99,38 +106,22 @@ public class CalendarFragment extends Fragment {
         recyclerTasks.setAdapter(taskAdapter);
     }
 
-
-    private void setTaskReminder(Task task) {
-        ReminderManager reminderManager = new ReminderManager(requireContext());
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            AlarmManager alarmManager = (AlarmManager) requireContext().getSystemService(Context.ALARM_SERVICE);
-            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
-
-
-                reminderManager.setInexactReminder(task);
-                return;
-            }
-        }
-
-
-        reminderManager.setReminder(task);
-    }
-
-    private void setupDatePicker() {
+    private void setupCalendarView() {
         Calendar cal = Calendar.getInstance();
         selectedDateStr = sdf.format(cal.getTime());
         updateDateDisplay(cal);
 
-        datePicker.init(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),
-                (view, year, monthOfYear, dayOfMonth) -> {
-                    Calendar selected = Calendar.getInstance();
-                    selected.set(year, monthOfYear, dayOfMonth);
-                    selectedDateStr = sdf.format(selected.getTime());
-                    updateDateDisplay(selected);
-                    filterTasksByDate();
-                });
+        // CalendarView Listener
+        calendarView.setOnDateChangeListener((view, year, month, dayOfMonth) -> {
+            Calendar selected = Calendar.getInstance();
+            selected.set(year, month, dayOfMonth);
 
+            selectedDateStr = sdf.format(selected.getTime());
+            updateDateDisplay(selected);
+            filterTasksByDate();
+        });
+
+        // Initial filter
         filterTasksByDate();
     }
 
@@ -143,20 +134,7 @@ public class CalendarFragment extends Fragment {
             txtSelectedDate.setText(displayDateFormat.format(calendar.getTime()));
         }
 
-        if (txtTaskCount != null) {
-            int taskCount = getTaskCountForSelectedDate();
-            txtTaskCount.setText(taskCount + (taskCount == 1 ? " task" : " tasks"));
-        }
-    }
-
-    private int getTaskCountForSelectedDate() {
-        int count = 0;
-        for (Task task : taskList) {
-            if (task.getDate() != null && task.getDate().equals(selectedDateStr)) {
-                count++;
-            }
-        }
-        return count;
+        // Count update is now handled inside filterTasksByDate to ensure sync
     }
 
     private void openAddTaskDialog() {
@@ -167,15 +145,10 @@ public class CalendarFragment extends Fragment {
         dialog.setArguments(args);
 
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
-
-
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-
                 taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                 filterTasksByDate();
-
-                Toast.makeText(requireContext(), "Task Added with reminder!", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -185,7 +158,7 @@ public class CalendarFragment extends Fragment {
     private void confirmDelete(Task task) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Delete Task")
-                .setMessage("Are you sure you want to delete this task? This will also cancel the reminder.")
+                .setMessage("Are you sure you want to delete this task?")
                 .setPositiveButton("Yes", (dialog, which) -> {
                     ReminderManager reminderManager = new ReminderManager(getContext());
                     reminderManager.cancelReminder(task);
@@ -195,7 +168,7 @@ public class CalendarFragment extends Fragment {
                     taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                     filterTasksByDate();
 
-                    Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Task deleted", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("No", null)
                 .show();
@@ -220,11 +193,8 @@ public class CalendarFragment extends Fragment {
         dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
             @Override
             public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-
                 taskList = TaskManager.getInstance(requireContext()).getAllTasks();
                 filterTasksByDate();
-
-                Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -240,18 +210,24 @@ public class CalendarFragment extends Fragment {
                 filtered.add(task);
             }
         }
-        taskAdapter.updateList(filtered);
-        updateDateDisplay(getSelectedCalendar());
-    }
 
-    private Calendar getSelectedCalendar() {
-        Calendar cal = Calendar.getInstance();
-        try {
-            cal.setTime(sdf.parse(selectedDateStr));
-        } catch (Exception e) {
-            e.printStackTrace();
+        // Update Adapter
+        taskAdapter.updateList(filtered);
+
+        // Update Count Text
+        if (txtTaskCount != null) {
+            int count = filtered.size();
+            txtTaskCount.setText(count + (count == 1 ? " task" : " tasks"));
         }
-        return cal;
+
+        // Toggle Empty State / RecyclerView
+        if (filtered.isEmpty()) {
+            recyclerTasks.setVisibility(View.GONE);
+            emptyState.setVisibility(View.VISIBLE);
+        } else {
+            recyclerTasks.setVisibility(View.VISIBLE);
+            emptyState.setVisibility(View.GONE);
+        }
     }
 
     @Override

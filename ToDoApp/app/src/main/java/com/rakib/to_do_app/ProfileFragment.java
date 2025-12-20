@@ -12,14 +12,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.bumptech.glide.Glide;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import de.hdodenhof.circleimageview.CircleImageView;
 import java.io.ByteArrayOutputStream;
@@ -30,32 +29,31 @@ public class ProfileFragment extends Fragment {
 
     private CircleImageView profileImage;
     private TextInputEditText etFullName, etEmail, etPhone, etBio;
-    private Button btnSaveProfile, btnCancel;
-    private ImageButton btnEditPhoto;
-    private TextView tvUserNameHeader;
+    private MaterialButton btnSaveProfile, btnShareTasks, btnLogout;
+    private FloatingActionButton btnEditPhoto;
 
-    private Button btnShareTasks;
+    // This is the variable for the name at the top of the Profile Page
+    private TextView tvUserNameHeader, tvUserEmailDisplay;
 
     private DatabaseHelper dbHelper;
     private TaskManager taskManager;
+    private SessionManager sessionManager;
     private String userId = "local_user";
 
-    private static final String TAG = "ProfileFragment";
     private static final int PICK_IMAGE_REQUEST = 1001;
     private static final int MAX_IMAGE_SIZE = 500;
 
     private Uri selectedImageUri;
-    private String currentBase64Image;
+    private String currentBase64Image = "";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.activity_profile, container, false);
-
-        Log.d(TAG, "onCreateView: Fragment created");
+        View view = inflater.inflate(R.layout.activity_profile, container, false); // Make sure this matches your XML filename
 
         dbHelper = new DatabaseHelper(requireContext());
         taskManager = TaskManager.getInstance(requireContext());
+        sessionManager = new SessionManager(requireContext());
 
         initializeViews(view);
         loadUserData();
@@ -70,19 +68,29 @@ public class ProfileFragment extends Fragment {
         etEmail = view.findViewById(R.id.et_email);
         etPhone = view.findViewById(R.id.et_phone);
         etBio = view.findViewById(R.id.et_bio);
+
         btnSaveProfile = view.findViewById(R.id.btn_save_profile);
-        btnCancel = view.findViewById(R.id.btn_cancel);
+        btnShareTasks = view.findViewById(R.id.btn_share_tasks);
+        btnLogout = view.findViewById(R.id.btn_logout);
         btnEditPhoto = view.findViewById(R.id.btn_edit_photo);
 
+        // Correctly linking the header TextView
         tvUserNameHeader = view.findViewById(R.id.tv_user_name);
-
-        btnShareTasks = view.findViewById(R.id.btn_share_tasks);
+        tvUserEmailDisplay = view.findViewById(R.id.tv_user_email_display);
     }
 
     private void loadUserData() {
-        Log.d(TAG, "loadUserData: Loading user data from SQLite");
+        String sessionEmail = sessionManager.getUserEmail();
+        UserProfile userProfile;
 
-        UserProfile userProfile = dbHelper.getUserProfile();
+        if (!sessionEmail.isEmpty()) {
+            // Logged in: Fetch from AUTH table (which now has the image column)
+            userProfile = dbHelper.getUserDetails(sessionEmail);
+        } else {
+            // Not logged in: Fetch from local PROFILE table
+            userProfile = dbHelper.getUserProfile();
+        }
+
         if (userProfile != null) {
             updateUI(userProfile);
         }
@@ -94,33 +102,39 @@ public class ProfileFragment extends Fragment {
         etPhone.setText(userProfile.getPhone());
         etBio.setText(userProfile.getBio());
 
+        // Update the header text with the correct variable
         if (tvUserNameHeader != null) {
             tvUserNameHeader.setText(userProfile.getName());
         }
+        if (tvUserEmailDisplay != null) {
+            tvUserEmailDisplay.setText(userProfile.getEmail());
+        }
 
+        // Load Image
         if (userProfile.getProfileImageBase64() != null && !userProfile.getProfileImageBase64().isEmpty()) {
             currentBase64Image = userProfile.getProfileImageBase64();
-            loadBase64Image(userProfile.getProfileImageBase64());
+            loadBase64Image(currentBase64Image);
         } else {
             profileImage.setImageResource(R.drawable.outline_account_circle_24);
         }
     }
 
     private void setupClickListeners() {
-        btnEditPhoto.setOnClickListener(v -> openImagePicker());
+        if (btnEditPhoto != null) btnEditPhoto.setOnClickListener(v -> openImagePicker());
+        if (btnSaveProfile != null) btnSaveProfile.setOnClickListener(v -> saveProfile());
+        if (btnShareTasks != null) btnShareTasks.setOnClickListener(v -> exportAndShareTasks());
+        if (btnLogout != null) btnLogout.setOnClickListener(v -> logoutUser());
+    }
 
-        btnSaveProfile.setOnClickListener(v -> saveProfile());
-
-        btnCancel.setOnClickListener(v -> loadUserData());
-
-        btnShareTasks.setOnClickListener(v -> exportAndShareTasks());
+    private void logoutUser() {
+        sessionManager.logoutUser();
+        if (getActivity() != null) {
+            getActivity().finish();
+        }
     }
 
     private void exportAndShareTasks() {
-        Toast.makeText(requireContext(), "Generating tasks data...", Toast.LENGTH_SHORT).show();
-
         List<Task> tasks = taskManager.getAllTasks();
-
         String shareContent = generateTaskSummary(tasks);
 
         if (shareContent.isEmpty()) {
@@ -142,21 +156,17 @@ public class ProfileFragment extends Fragment {
 
     private String generateTaskSummary(List<Task> tasks) {
         StringBuilder sb = new StringBuilder();
-        sb.append("--- Task List Export (").append(dbHelper.getUserProfile().getName()).append(") ---\n\n");
+        String userName = sessionManager.getUserName();
+        sb.append("--- Task List Export (").append(userName).append(") ---\n\n");
 
-        if (tasks == null || tasks.isEmpty()) {
-            return "";
-        }
+        if (tasks == null || tasks.isEmpty()) return "";
 
         for (Task task : tasks) {
             sb.append("Title: ").append(task.getTitle()).append("\n");
-            sb.append("Priority: ").append(task.getPriority()).append("\n");
             sb.append("Status: ").append(task.getStatus()).append("\n");
-            sb.append("Category: ").append(task.getCategory()).append("\n");
-            sb.append("Due: ").append(task.getDate()).append(" (").append(task.getStartTime()).append(" - ").append(task.getEndTime()).append(")\n");
+            sb.append("Due: ").append(task.getDate()).append("\n");
             sb.append("----------------------------\n");
         }
-
         return sb.toString();
     }
 
@@ -173,97 +183,48 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
             selectedImageUri = data.getData();
             if (selectedImageUri != null) {
-                try {
-                    Glide.with(this)
-                            .load(selectedImageUri)
-                            .into(profileImage);
-
-                    saveImageAsBase64(selectedImageUri);
-                } catch (Exception e) {
-                    Toast.makeText(getActivity(), "Error loading image", Toast.LENGTH_SHORT).show();
-                }
+                saveImageAsBase64(selectedImageUri);
             }
         }
     }
 
     private void saveImageAsBase64(Uri imageUri) {
         Toast.makeText(getActivity(), "Processing image...", Toast.LENGTH_SHORT).show();
-
         new Thread(() -> {
             try {
                 InputStream inputStream = getActivity().getContentResolver().openInputStream(imageUri);
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inJustDecodeBounds = true;
-                BitmapFactory.decodeStream(inputStream, null, options);
+                Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                 inputStream.close();
 
-                int scale = 1;
-                while ((options.outWidth / scale / 2) >= 400 && (options.outHeight / scale / 2) >= 400) {
-                    scale *= 2;
-                }
+                // Compression
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 60, baos);
+                byte[] imageBytes = baos.toByteArray();
+                String base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT);
 
-                BitmapFactory.Options sampledOptions = new BitmapFactory.Options();
-                sampledOptions.inSampleSize = scale;
-                inputStream = getActivity().getContentResolver().openInputStream(imageUri);
-                Bitmap bitmap = BitmapFactory.decodeStream(inputStream, null, sampledOptions);
-                inputStream.close();
+                getActivity().runOnUiThread(() -> {
+                    currentBase64Image = base64Image;
+                    loadBase64Image(currentBase64Image); // Update UI
 
-                if (bitmap != null) {
-                    int quality = 80;
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
-
-                    byte[] imageBytes = baos.toByteArray();
-                    int sizeInKB = imageBytes.length / 1024;
-
-                    while (sizeInKB > MAX_IMAGE_SIZE && quality > 40) {
-                        quality -= 10;
-                        baos.reset();
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
-                        imageBytes = baos.toByteArray();
-                        sizeInKB = imageBytes.length / 1024;
-                    }
-
-                    String base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT);
-
-                    getActivity().runOnUiThread(() -> {
-                        currentBase64Image = base64Image;
-                        saveBase64ImageToDatabase(base64Image);
-                        Toast.makeText(getActivity(), "Profile picture saved!", Toast.LENGTH_SHORT).show();
-                    });
-
-                    bitmap.recycle();
-                }
+                    // Trigger save immediately so user doesn't have to hit "Save Profile"
+                    saveProfile();
+                });
 
             } catch (Exception e) {
-                getActivity().runOnUiThread(() -> {
-                    Toast.makeText(getActivity(), "Error processing image", Toast.LENGTH_LONG).show();
-                });
+                getActivity().runOnUiThread(() -> Toast.makeText(getActivity(), "Error processing image", Toast.LENGTH_LONG).show());
             }
         }).start();
-    }
-
-    private void saveBase64ImageToDatabase(String base64Image) {
-        UserProfile currentProfile = dbHelper.getUserProfile();
-        if (currentProfile != null) {
-            currentProfile.setProfileImageBase64(base64Image);
-            dbHelper.saveUserProfile(currentProfile);
-        }
     }
 
     private void loadBase64Image(String base64Image) {
         try {
             byte[] imageBytes = Base64.decode(base64Image, Base64.DEFAULT);
             Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-
             if (getActivity() != null) {
                 Glide.with(this).load(bitmap).into(profileImage);
-            } else {
-                profileImage.setImageBitmap(bitmap);
             }
         } catch (Exception e) {
             profileImage.setImageResource(R.drawable.outline_account_circle_24);
@@ -281,28 +242,28 @@ public class ProfileFragment extends Fragment {
             return;
         }
 
-        if (email.isEmpty()) {
-            etEmail.setError("Email is required");
-            return;
-        }
+        // Call the database update
+        updateDatabase(name, email, phone, bio, currentBase64Image);
 
-        UserProfile updatedProfile = new UserProfile(
-                userId,
-                name,
-                email,
-                phone,
-                bio,
-                currentBase64Image != null ? currentBase64Image : ""
-        );
+        // Update session
+        sessionManager.createLoginSession(name, email);
 
-        long result = dbHelper.saveUserProfile(updatedProfile);
-        if (result > 0) {
-            Toast.makeText(getActivity(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
-            if (tvUserNameHeader != null) {
-                tvUserNameHeader.setText(name);
-            }
+        // FIXED LINE: Use tvUserNameHeader instead of tvUserNameGreeting
+        if (tvUserNameHeader != null) tvUserNameHeader.setText(name);
+
+        Toast.makeText(getActivity(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateDatabase(String name, String email, String phone, String bio, String image) {
+        UserProfile updatedProfile = new UserProfile(userId, name, email, phone, bio, image);
+        String sessionEmail = sessionManager.getUserEmail();
+
+        if (!sessionEmail.isEmpty()) {
+            // Logged in: Update Auth Table
+            dbHelper.updateUserInfo(updatedProfile);
         } else {
-            Toast.makeText(getActivity(), "Failed to update profile", Toast.LENGTH_SHORT).show();
+            // Not logged in: Update Local Profile Table
+            dbHelper.saveUserProfile(updatedProfile);
         }
     }
 }

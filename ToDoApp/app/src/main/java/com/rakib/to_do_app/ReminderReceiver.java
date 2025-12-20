@@ -74,7 +74,7 @@ public class ReminderReceiver extends BroadcastReceiver {
                 currentTask.setStatus("unfinished");
                 taskManager.updateTask(currentTask);
 
-                // Cancel the entire sequence and delete state
+
                 reminderManager.cancelReminder(currentTask);
             }
         }

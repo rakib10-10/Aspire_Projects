@@ -20,6 +20,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
+        // Check Session BEFORE loading layout
+        SessionManager session = new SessionManager(this);
+        if (!session.isLoggedIn()) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return; // Stop loading MainActivity
+        }
+
         dbHelper = new DatabaseHelper(this);
         boolean isDarkMode = dbHelper.isDarkModeEnabled();
         int mode = isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO;
@@ -54,8 +62,8 @@ public class MainActivity extends AppCompatActivity {
                     getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new CalendarFragment()).commit();
                     return true;
                 }
-                else if (itemId == R.id.nav_clock) {
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new PomodoroFragment()).commit();
+                else if (itemId == R.id.nav_add) {
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new DashboardFragment()).commit();
                     return true;
                 }
                 else if (itemId == R.id.nav_notifications) {

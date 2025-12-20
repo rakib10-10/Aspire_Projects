@@ -1,45 +1,52 @@
 package com.rakib.to_do_app;
 
-import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageButton;
-import android.widget.PopupMenu;
-import android.widget.TextView;
-import android.widget.Toast;
-import androidx.appcompat.widget.SearchView;
-import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class HomeFragment extends Fragment {
 
-    private Button btnMyTasks, btnInProgress, btnCompleted;
+    // Views
+    private MaterialButtonToggleGroup toggleGroupStatus;
     private RecyclerView recyclerTasks;
     private TextView txtEmptyState;
+    private LinearLayout layoutEmptyState; // New container for empty state
     private TextView tvUserNameGreeting;
-    private TaskAdapter taskAdapter;
-    private List<Task> allTasks = new ArrayList<>();
-    private String currentTab = "all";
-    private String currentSearchQuery = "";
-    private String currentSortBy = "date";
-    private TaskManager taskManager;
-    private DatabaseHelper dbHelper;
     private SearchView searchTaskCategory;
     private ImageButton btnSort;
 
+    // Data
+    private TaskAdapter taskAdapter;
+    private List<Task> allTasks = new ArrayList<>();
+    private TaskManager taskManager;
+    private DatabaseHelper dbHelper;
+
+    // State
+    private String currentTab = "all";
+    private String currentSearchQuery = "";
+    private String currentSortBy = "date";
+
     public HomeFragment() {
+        // Required empty public constructor
     }
 
     @Override
@@ -51,11 +58,9 @@ public class HomeFragment extends Fragment {
         dbHelper = new DatabaseHelper(requireContext());
 
         initializeViews(view);
-
         loadUserName();
-
         setupTaskAdapter();
-        setupClickListeners();
+        setupTabListener(); // New consolidated listener
         setupSearchAndSort();
 
         loadTasks();
@@ -63,49 +68,39 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        if (currentTab.equals("all")) {
-            selectTab(btnMyTasks);
-        }
-    }
-
-
     private void initializeViews(View view) {
-        btnMyTasks = view.findViewById(R.id.btnMyTasks);
-        btnInProgress = view.findViewById(R.id.btnInProgress);
-        btnCompleted = view.findViewById(R.id.btnCompleted);
+        toggleGroupStatus = view.findViewById(R.id.toggleGroupStatus);
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
         txtEmptyState = view.findViewById(R.id.txtEmptyState);
+        layoutEmptyState = view.findViewById(R.id.layoutEmptyState); // Make sure to add ID in XML
+
         searchTaskCategory = view.findViewById(R.id.searchTaskCategory);
         btnSort = view.findViewById(R.id.btnSort);
-
         tvUserNameGreeting = view.findViewById(R.id.tvUserNameGreeting);
     }
 
     private void loadUserName() {
-        UserProfile userProfile = dbHelper.getUserProfile();
-        if (userProfile != null && tvUserNameGreeting != null) {
-            String name = userProfile.getName();
-            if (name != null && !name.isEmpty()) {
-                String firstName = name.split(" ")[0];
-                tvUserNameGreeting.setText(firstName + "!");
-            } else {
-                tvUserNameGreeting.setText("User!");
-            }
+        // Use session manager preferably, or fallback to DB
+        SessionManager session = new SessionManager(requireContext());
+        String name = session.getUserName();
+        if (name.equals("User")) { // Fallback if session empty
+            UserProfile profile = dbHelper.getUserProfile();
+            if (profile != null) name = profile.getName();
+        }
+
+        if (name != null && !name.isEmpty()) {
+            String firstName = name.split(" ")[0];
+            tvUserNameGreeting.setText(firstName + "!");
         }
     }
 
-
     private void setupTaskAdapter() {
+        // ... (Keep your existing adapter setup code exactly as is) ...
         taskAdapter = new TaskAdapter(new ArrayList<>(), new TaskAdapter.OnTaskActionListener() {
             @Override
             public void onTaskEdit(int position) {
                 Task task = taskAdapter.getTaskAt(position);
-                if (task != null) {
-                    openEditTaskDialog(task);
-                }
+                if (task != null) openEditTaskDialog(task);
             }
 
             @Override
@@ -117,7 +112,7 @@ public class HomeFragment extends Fragment {
                     taskManager.removeTask(task);
                     allTasks.remove(task);
                     filterAndSortTasks();
-                    Toast.makeText(getContext(), "Task and reminder deleted", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Task deleted", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -138,23 +133,19 @@ public class HomeFragment extends Fragment {
         recyclerTasks.setAdapter(taskAdapter);
     }
 
-    private void setupClickListeners() {
-        btnMyTasks.setOnClickListener(v -> {
-            selectTab(btnMyTasks);
-            currentTab = "all";
-            filterAndSortTasks();
-        });
-
-        btnInProgress.setOnClickListener(v -> {
-            selectTab(btnInProgress);
-            currentTab = "running";
-            filterAndSortTasks();
-        });
-
-        btnCompleted.setOnClickListener(v -> {
-            selectTab(btnCompleted);
-            currentTab = "completed";
-            filterAndSortTasks();
+    // --- REPLACED: setupClickListeners with setupTabListener ---
+    private void setupTabListener() {
+        toggleGroupStatus.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked) {
+                if (checkedId == R.id.btnMyTasks) {
+                    currentTab = "all";
+                } else if (checkedId == R.id.btnInProgress) {
+                    currentTab = "running";
+                } else if (checkedId == R.id.btnCompleted) {
+                    currentTab = "completed";
+                }
+                filterAndSortTasks();
+            }
         });
     }
 
@@ -182,44 +173,22 @@ public class HomeFragment extends Fragment {
         PopupMenu popup = new PopupMenu(requireContext(), v);
         popup.getMenu().add(0, 1, 0, "Sort by Date");
         popup.getMenu().add(0, 2, 0, "Sort by Priority");
-        popup.getMenu().add(0, 3, 0, "Sort by Category");
+        // popup.getMenu().add(0, 3, 0, "Sort by Category"); // Optional
 
         popup.setOnMenuItemClickListener(item -> {
-            String newSort = "";
             int itemId = item.getItemId();
-            if (itemId == 1) {
-                newSort = "date";
-            } else if (itemId == 2) {
-                newSort = "priority";
-            } else if (itemId == 3) {
-                newSort = "category";
-            } else {
-                return false;
-            }
+            String newSort = currentSortBy;
+
+            if (itemId == 1) newSort = "date";
+            else if (itemId == 2) newSort = "priority";
 
             if (!currentSortBy.equals(newSort)) {
                 currentSortBy = newSort;
                 filterAndSortTasks();
-                Toast.makeText(requireContext(), "Sorted by " + item.getTitle(), Toast.LENGTH_SHORT).show();
             }
             return true;
         });
-
         popup.show();
-    }
-
-    private void selectTab(Button selectedButton) {
-        Button[] allButtons = {btnMyTasks, btnInProgress, btnCompleted};
-
-        for (Button button : allButtons) {
-            if (button instanceof MaterialButton) {
-                ((MaterialButton) button).setChecked(false);
-            }
-        }
-
-        if (selectedButton instanceof MaterialButton) {
-            ((MaterialButton) selectedButton).setChecked(true);
-        }
     }
 
     private void loadTasks() {
@@ -232,56 +201,62 @@ public class HomeFragment extends Fragment {
         String status = currentTab;
         String query = currentSearchQuery.toLowerCase(Locale.getDefault());
 
+        // 1. Filter by Status
         for (Task task : allTasks) {
-            boolean statusMatches = status.equals("all") || (task.getStatus() != null && task.getStatus().equals(status));
+            boolean statusMatches = status.equals("all") ||
+                    (task.getStatus() != null && task.getStatus().equals(status));
             if (statusMatches) {
                 filtered.add(task);
             }
         }
 
+        // 2. Filter by Search (Category)
         if (!query.isEmpty()) {
             List<Task> searchFiltered = new ArrayList<>();
             for (Task task : filtered) {
-                if (task.getCategory() != null && task.getCategory().toLowerCase(Locale.getDefault()).contains(query)) {
+                if (task.getCategory() != null &&
+                        task.getCategory().toLowerCase(Locale.getDefault()).contains(query)) {
                     searchFiltered.add(task);
                 }
             }
             filtered = searchFiltered;
         }
 
+        // 3. Sort & Update Adapter
         if (taskAdapter != null) {
             taskAdapter.updateList(filtered);
             taskAdapter.sortList(currentSortBy);
         }
 
-        if (filtered.isEmpty()) {
+        // 4. Update Empty State Visibility
+        updateEmptyState(filtered.isEmpty(), status, query);
+    }
+
+    private void updateEmptyState(boolean isEmpty, String status, String query) {
+        if (isEmpty) {
             recyclerTasks.setVisibility(View.GONE);
-            txtEmptyState.setVisibility(View.VISIBLE);
+            layoutEmptyState.setVisibility(View.VISIBLE); // Show layout container
+
             if (!query.isEmpty()) {
-                txtEmptyState.setText("No tasks match the category: \"" + currentSearchQuery + "\"");
+                txtEmptyState.setText("No categories match \"" + query + "\"");
             } else {
                 switch (status) {
-                    case "all":
-                        txtEmptyState.setText("No tasks yet. Create your first task!");
-                        break;
-                    case "running":
-                        txtEmptyState.setText("No tasks in progress");
-                        break;
-                    case "completed":
-                        txtEmptyState.setText("No completed tasks yet");
-                        break;
+                    case "all": txtEmptyState.setText("No tasks yet"); break;
+                    case "running": txtEmptyState.setText("No tasks in progress"); break;
+                    case "completed": txtEmptyState.setText("No completed tasks"); break;
                 }
             }
         } else {
             recyclerTasks.setVisibility(View.VISIBLE);
-            txtEmptyState.setVisibility(View.GONE);
+            layoutEmptyState.setVisibility(View.GONE);
         }
     }
 
     private void openEditTaskDialog(Task task) {
         AddTaskDialog dialog = new AddTaskDialog();
-
         Bundle args = new Bundle();
+        // ... (Keep existing argument passing logic) ...
+        args.putLong("task_id", task.getId());
         args.putString("title", task.getTitle());
         args.putString("description", task.getDescription());
         args.putString("date", task.getDate());
@@ -290,31 +265,10 @@ public class HomeFragment extends Fragment {
         args.putString("category", task.getCategory());
         args.putString("status", task.getStatus());
         args.putString("priority", task.getPriority());
+        args.putString("color_tag", task.getColorTag());
         dialog.setArguments(args);
 
-        dialog.setOnTaskCreatedListener(new AddTaskDialog.OnTaskCreatedListener() {
-            @Override
-            public void onTaskCreated(String title, String description, String date, String startTime, String endTime, String category, String status, String priority) {
-                ReminderManager reminderManager = new ReminderManager(requireContext());
-                reminderManager.cancelReminder(task);
-
-                task.setTitle(title);
-                task.setDescription(description);
-                task.setDate(date);
-                task.setStartTime(startTime);
-                task.setEndTime(endTime);
-                task.setCategory(category);
-                task.setStatus(status);
-                task.setPriority(priority);
-
-                taskManager.updateTask(task);
-                reminderManager.setReminder(task);
-                loadTasks();
-
-                Toast.makeText(requireContext(), "Task updated with new reminder!", Toast.LENGTH_SHORT).show();
-            }
-        });
-
+        dialog.setOnTaskCreatedListener((t, d, dt, st, et, c, s, p) -> loadTasks());
         dialog.show(getParentFragmentManager(), "EditTaskDialog");
     }
 
@@ -322,7 +276,6 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         loadTasks();
-
         loadUserName();
     }
 }

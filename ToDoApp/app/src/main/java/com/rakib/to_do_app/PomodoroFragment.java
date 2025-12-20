@@ -70,18 +70,17 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        Log.d(TAG, "onCreateView() called");
         return inflater.inflate(R.layout.fragment_pomodoro, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        Log.d(TAG, "onViewCreated() called");
 
         initializeViews(view);
         progressBarTimer.setMax(10000);
 
+        // Set slider to default 25 or whatever was last set
         timeSlider.setValue((float) (startTimeInMillis / (60 * 1000)));
 
         setupListeners();
@@ -102,6 +101,7 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
 
     private void setupListeners() {
         timeSlider.addOnChangeListener((slider, value, fromUser) -> {
+            // Only update local time if timer is NOT running
             if (!isServiceBound || pomodoroService == null || !pomodoroService.isTimerRunning()) {
                 startTimeInMillis = (long) value * 60 * 1000;
                 updateTimerDisplay(startTimeInMillis);
@@ -114,17 +114,27 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
             if (!isServiceBound || pomodoroService == null) return;
 
             if (pomodoroService.isTimerRunning()) {
+                // PAUSE LOGIC
                 pomodoroService.pauseTimer();
                 btnPlayPause.setText("Resume");
                 btnPlayPause.setIconResource(R.drawable.outline_autoplay_24);
                 tvStatus.setText("Paused");
                 timeSlider.setEnabled(true);
             } else {
-                if (pomodoroService.getTimeLeftInMillis() <= 0) {
+                // START / RESUME LOGIC
+
+                // FIX: Check if time is 0 OR if user changed the slider (startTime mismatch)
+                boolean timeIsFinished = pomodoroService.getTimeLeftInMillis() <= 0;
+                boolean sliderChanged = pomodoroService.getStartTimeInMillis() != startTimeInMillis;
+
+                if (timeIsFinished || sliderChanged) {
+                    // Start FRESH timer with new slider value
                     pomodoroService.startTimer(startTimeInMillis);
                 } else {
+                    // Resume existing timer
                     pomodoroService.resumeTimer();
                 }
+
                 btnPlayPause.setText("Pause");
                 btnPlayPause.setIconResource(R.drawable.outline_alarm_pause_24);
                 tvStatus.setText("Focusing...");
@@ -136,6 +146,10 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
             if (!isServiceBound || pomodoroService == null) return;
 
             pomodoroService.resetTimer();
+
+            // Reset local variable to slider value
+            startTimeInMillis = (long) timeSlider.getValue() * 60 * 1000;
+
             btnPlayPause.setText("Start Focus");
             btnPlayPause.setIconResource(R.drawable.outline_autoplay_24);
             tvStatus.setText("Ready to Focus?");
@@ -150,6 +164,12 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
         long timeLeft = pomodoroService.getTimeLeftInMillis();
         boolean isRunning = pomodoroService.isTimerRunning();
 
+        // Sync local start time with service start time if running
+        if (isRunning || timeLeft > 0) {
+            startTimeInMillis = pomodoroService.getStartTimeInMillis();
+            timeSlider.setValue((float) (startTimeInMillis / (60 * 1000)));
+        }
+
         updateTimerDisplay(timeLeft);
 
         if (isRunning) {
@@ -158,9 +178,9 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
             tvStatus.setText("Focusing...");
             timeSlider.setEnabled(false);
         } else {
-            btnPlayPause.setText(timeLeft > 0 ? "Resume" : "Start Focus");
+            btnPlayPause.setText(timeLeft > 0 && timeLeft < startTimeInMillis ? "Resume" : "Start Focus");
             btnPlayPause.setIconResource(R.drawable.outline_autoplay_24);
-            tvStatus.setText(timeLeft > 0 ? "Paused" : "Ready to Focus?");
+            tvStatus.setText(timeLeft > 0 && timeLeft < startTimeInMillis ? "Paused" : "Ready to Focus?");
             timeSlider.setEnabled(true);
         }
     }
@@ -201,6 +221,9 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
                 progressBarTimer.setProgress(0);
                 timeSlider.setEnabled(true);
 
+                // Reset start time to slider value for next run
+                startTimeInMillis = (long) timeSlider.getValue() * 60 * 1000;
+
                 Toast.makeText(requireContext(), "Pomodoro session finished!", Toast.LENGTH_LONG).show();
             });
         }
@@ -212,7 +235,6 @@ public class PomodoroFragment extends Fragment implements PomodoroService.TimerC
         if (isServiceBound) {
             requireActivity().unbindService(serviceConnection);
             isServiceBound = false;
-            Log.d(TAG, "Service unbound");
         }
     }
 }

@@ -7,8 +7,10 @@ public class NotificationSettings {
     private String defaultReminderTime;
     private String notificationSound;
     private boolean darkModeEnabled;
-
     private String customRingtoneUri;
+
+    // NEW: Interval in minutes for unfinished task reminders (default 30 mins)
+    private int unfinishedNotificationInterval;
 
     public NotificationSettings() {
         this.taskRemindersEnabled = true;
@@ -18,44 +20,31 @@ public class NotificationSettings {
         this.notificationSound = "Default";
         this.customRingtoneUri = "";
         this.darkModeEnabled = false;
+        this.unfinishedNotificationInterval = 30; // Default
     }
 
+    // Getters and Setters
     public boolean isTaskRemindersEnabled() { return taskRemindersEnabled; }
-    public void setTaskRemindersEnabled(boolean taskRemindersEnabled) {
-        this.taskRemindersEnabled = taskRemindersEnabled;
-    }
+    public void setTaskRemindersEnabled(boolean taskRemindersEnabled) { this.taskRemindersEnabled = taskRemindersEnabled; }
 
     public boolean isDueDateAlertsEnabled() { return dueDateAlertsEnabled; }
-    public void setDueDateAlertsEnabled(boolean dueDateAlertsEnabled) {
-        this.dueDateAlertsEnabled = dueDateAlertsEnabled;
-    }
+    public void setDueDateAlertsEnabled(boolean dueDateAlertsEnabled) { this.dueDateAlertsEnabled = dueDateAlertsEnabled; }
 
     public boolean isDailySummaryEnabled() { return dailySummaryEnabled; }
-    public void setDailySummaryEnabled(boolean dailySummaryEnabled) {
-        this.dailySummaryEnabled = dailySummaryEnabled;
-    }
+    public void setDailySummaryEnabled(boolean dailySummaryEnabled) { this.dailySummaryEnabled = dailySummaryEnabled; }
 
     public String getDefaultReminderTime() { return defaultReminderTime; }
-    public void setDefaultReminderTime(String defaultReminderTime) {
-        this.defaultReminderTime = defaultReminderTime;
-    }
+    public void setDefaultReminderTime(String defaultReminderTime) { this.defaultReminderTime = defaultReminderTime; }
 
     public String getNotificationSound() { return notificationSound; }
-    public void setNotificationSound(String notificationSound) {
-        this.notificationSound = notificationSound;
-    }
-    public boolean isDarkModeEnabled() {
-        return darkModeEnabled;
-    }
+    public void setNotificationSound(String notificationSound) { this.notificationSound = notificationSound; }
 
-    public void setDarkModeEnabled(boolean darkModeEnabled) {
-        this.darkModeEnabled = darkModeEnabled;
-    }
-    public String getCustomRingtoneUri() {
-        return customRingtoneUri;
-    }
+    public boolean isDarkModeEnabled() { return darkModeEnabled; }
+    public void setDarkModeEnabled(boolean darkModeEnabled) { this.darkModeEnabled = darkModeEnabled; }
 
-    public void setCustomRingtoneUri(String customRingtoneUri) {
-        this.customRingtoneUri = customRingtoneUri;
-    }
+    public String getCustomRingtoneUri() { return customRingtoneUri; }
+    public void setCustomRingtoneUri(String customRingtoneUri) { this.customRingtoneUri = customRingtoneUri; }
+
+    public int getUnfinishedNotificationInterval() { return unfinishedNotificationInterval; }
+    public void setUnfinishedNotificationInterval(int unfinishedNotificationInterval) { this.unfinishedNotificationInterval = unfinishedNotificationInterval; }
 }
