@@ -13,32 +13,9 @@ import androidx.core.app.NotificationCompat;
 
 public class NotificationHelper {
     private static final String TAG = "NotificationHelper";
-    private static final String CHANNEL_ID = "todo_app_channel";
-    private static final String CHANNEL_NAME = "ToDo App Notifications";
-
-    // Static variable to stop previous sound before playing new one
+    // We use a specific ID for general notifications, distinct from the dynamic reminder ones
+    private static final String GENERAL_CHANNEL_ID = "todo_general_channel";
     private static Ringtone currentRingtone;
-
-    public static void createNotificationChannel(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Notifications for task reminders and due dates");
-
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build();
-            channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes);
-
-            NotificationManager notificationManager =
-                    context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-    }
 
     public static Uri getSoundUri(Context context, String soundNameOrUri) {
         // 1. Handle Null: Return Default
@@ -47,7 +24,6 @@ public class NotificationHelper {
         }
 
         // 2. Handle Direct URIs (content:// or file://)
-        // This is useful if you are passing the raw URI directly
         if (soundNameOrUri.contains("://")) {
             try {
                 return Uri.parse(soundNameOrUri);
@@ -76,18 +52,26 @@ public class NotificationHelper {
         try {
             DatabaseHelper dbHelper = new DatabaseHelper(context);
 
-            // Query the specific table for this specific name
-            String customUriString = dbHelper.getCustomSoundUri(soundNameOrUri);
+            // A. Check if user selected "Custom" in general settings
+            if ("Custom".equalsIgnoreCase(soundNameOrUri)) {
+                NotificationSettings settings = dbHelper.getNotificationSettings();
+                String customUri = settings.getCustomRingtoneUri();
+                if (customUri != null && !customUri.isEmpty()) {
+                    return Uri.parse(customUri);
+                }
+            }
 
+            // B. Check specific custom sound names
+            String customUriString = dbHelper.getCustomSoundUri(soundNameOrUri);
             if (customUriString != null && !customUriString.isEmpty()) {
                 return Uri.parse(customUriString);
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error looking up custom sound in DB: " + e.getMessage());
+            Log.e(TAG, "Error looking up custom sound: " + e.getMessage());
         }
 
-        // 5. Fallback if name not found in DB
+        // 5. Fallback
         return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     }
 
@@ -119,15 +103,24 @@ public class NotificationHelper {
         }
     }
 
+    /**
+     * RESTORED: This method is useful for "Test Notification" buttons
+     * or generic app alerts that are NOT task reminders.
+     */
     public static void sendNotification(Context context, String title, String message, String soundPreference) {
         try {
             Uri soundUri = getSoundUri(context, soundPreference);
             NotificationManager notificationManager =
                     (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-            createNotificationChannel(context);
+            // Generate a dynamic ID just like we do in ReminderReceiver
+            // This ensures the "Test" notification actually plays the right sound
+            String cleanName = (soundPreference == null) ? "default" : soundPreference.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+            String dynamicId = "test_channel_" + cleanName;
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+            createDynamicChannel(notificationManager, dynamicId, soundUri);
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, dynamicId)
                     .setSmallIcon(R.drawable.outline_add_alert_24)
                     .setContentTitle(title)
                     .setContentText(message)
@@ -148,6 +141,31 @@ public class NotificationHelper {
 
         } catch (Exception e) {
             Log.e(TAG, "Error sending notification: " + e.getMessage());
+        }
+    }
+
+    // Helper to create channel dynamically (Duplicate of ReminderReceiver logic but necessary here for testing)
+    private static void createDynamicChannel(NotificationManager manager, String channelId, Uri soundUri) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Check if exists first
+            if (manager.getNotificationChannel(channelId) != null) return;
+
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    "General Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("General alerts");
+
+            if (soundUri != null) {
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .build();
+                channel.setSound(soundUri, audioAttributes);
+            }
+
+            manager.createNotificationChannel(channel);
         }
     }
 }

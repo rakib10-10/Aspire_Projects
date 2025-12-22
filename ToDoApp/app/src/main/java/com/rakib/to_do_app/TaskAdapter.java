@@ -15,10 +15,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -53,6 +52,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.txtDescription.setText(task.getDescription());
         holder.txtDate.setText(task.getDate());
 
+        // --- Priority Badge ---
         if (task.getPriority() != null && !task.getPriority().isEmpty()) {
             holder.txtPriority.setText(task.getPriority());
             holder.txtPriority.setVisibility(View.VISIBLE);
@@ -67,6 +67,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.txtPriority.setVisibility(View.GONE);
         }
 
+        // --- Category ---
         if (task.getCategory() != null && !task.getCategory().isEmpty()) {
             holder.txtCategory.setText("Category: " + task.getCategory());
             holder.txtCategory.setVisibility(View.VISIBLE);
@@ -74,6 +75,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.txtCategory.setVisibility(View.GONE);
         }
 
+        // --- Time Range ---
         if (task.getStartTime() != null && task.getEndTime() != null) {
             String timeRange = task.getStartTime() + " - " + task.getEndTime();
             holder.txtTime.setText(timeRange);
@@ -82,41 +84,37 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.txtTime.setVisibility(View.GONE);
         }
 
+        // --- FIX: Status Logic ---
         if (task.getStatus() != null) {
+            // Get correct text ("In Progress", "Completed", or "Missed")
             holder.txtStatus.setText("Status: " + getStatusDisplayText(task.getStatus()));
             holder.txtStatus.setVisibility(View.VISIBLE);
+
+            // Get correct color (Orange, Green, or Red)
             int statusColor = getStatusColor(holder.itemView.getContext(), task.getStatus());
             holder.txtStatus.setTextColor(statusColor);
         } else {
             holder.txtStatus.setVisibility(View.GONE);
         }
 
-
+        // --- Color Dot ---
         if (task.getColorTag() != null && !task.getColorTag().isEmpty() && holder.colorDot != null) {
             try {
                 int color = Color.parseColor(task.getColorTag());
-
                 GradientDrawable dotBg = new GradientDrawable();
                 dotBg.setShape(GradientDrawable.OVAL);
                 dotBg.setColor(color);
-
-
                 holder.colorDot.setBackground(dotBg);
                 holder.colorDot.setVisibility(View.VISIBLE);
-
             } catch (IllegalArgumentException e) {
-
                 holder.colorDot.setVisibility(View.GONE);
             }
         } else if (holder.colorDot != null) {
-
             holder.colorDot.setVisibility(View.GONE);
         }
 
-
         holder.btnMore.setOnClickListener(v -> showPopupMenu(v, position, task.getStatus()));
     }
-
 
     private int getPriorityColor(Context context, String priority) {
         switch (priority.toLowerCase()) {
@@ -131,20 +129,40 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
     }
 
+    // --- FIX: ADDED RED COLOR FOR MISSED TASKS ---
     private int getStatusColor(Context context, String status) {
         switch (status) {
             case "running":
                 return ContextCompat.getColor(context, android.R.color.holo_orange_dark);
             case "completed":
                 return ContextCompat.getColor(context, android.R.color.holo_green_dark);
+            case "unfinished":
+                return ContextCompat.getColor(context, android.R.color.holo_red_dark); // Red for Missed
             default:
                 return ContextCompat.getColor(context, android.R.color.holo_orange_dark);
+        }
+    }
+
+    // --- FIX: ADDED TEXT FOR MISSED TASKS ---
+    private String getStatusDisplayText(String status) {
+        switch (status) {
+            case "running": return "In Progress";
+            case "completed": return "Completed";
+            case "unfinished": return "Missed"; // Text for Missed
+            default: return "In Progress";
         }
     }
 
     private void showPopupMenu(View view, int position, String currentStatus) {
         PopupMenu popup = new PopupMenu(view.getContext(), view);
         popup.inflate(R.menu.menu_task_options);
+
+        // Dynamically update menu items based on status
+        if ("unfinished".equals(currentStatus)) {
+            // If missed, allow retry (mark as running)
+            popup.getMenu().findItem(R.id.action_mark_in_progress).setTitle("Restart Task");
+        }
+
         popup.setOnMenuItemClickListener(item -> {
             if (listener == null) return false;
 
@@ -167,14 +185,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         popup.show();
     }
 
-    private String getStatusDisplayText(String status) {
-        switch (status) {
-            case "running": return "In Progress";
-            case "completed": return "Completed";
-            default: return "In Progress";
-        }
-    }
-
     @Override
     public int getItemCount() {
         return taskList.size();
@@ -192,6 +202,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
         return null;
     }
+
     public void sortList(String sortBy) {
         if (taskList.isEmpty()) return;
 

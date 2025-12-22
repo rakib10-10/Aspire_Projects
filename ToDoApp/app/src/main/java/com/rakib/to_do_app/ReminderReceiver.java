@@ -6,20 +6,18 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.net.Uri;
 import android.os.Build;
-import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import java.util.Date;
 
 public class ReminderReceiver extends BroadcastReceiver {
     private static final String TAG = "ReminderReceiver";
-    private static final String CHANNEL_ID = "task_reminder_channel";
     private static final int MAX_ATTEMPTS = 5;
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "🔴 === REMINDER RECEIVER TRIGGERED ===");
-
         long taskId = intent.getLongExtra("task_id", -1);
         String title = intent.getStringExtra("title");
         String description = intent.getStringExtra("description");
@@ -27,62 +25,51 @@ public class ReminderReceiver extends BroadcastReceiver {
 
         if (taskId == -1) return;
 
-        // Use DatabaseHelper directly (Safer than TaskManager in Background)
         DatabaseHelper dbHelper = new DatabaseHelper(context);
         ReminderManager reminderManager = new ReminderManager(context);
-
         Task currentTask = dbHelper.getTask(taskId);
 
-        if (currentTask == null) {
+        if (currentTask == null || !"running".equals(currentTask.getStatus())) {
             reminderManager.cancelReminder(taskId);
             return;
         }
 
-        // Check if task is already done/completed
-        if (!"running".equals(currentTask.getStatus())) {
-            Log.d(TAG, "⚠️ Task not running (Status: " + currentTask.getStatus() + "). Stopping.");
-            reminderManager.cancelReminder(currentTask);
-            return;
-        }
-
-        // Show the Notification
+        // --- SHOW NOTIFICATION ---
         showNotification(context, title, description, taskId);
 
-        // Handle Repetition logic
+        // --- REPEAT LOGIC ---
         if (isRepeatingAlarm) {
             int currentAttempts = dbHelper.incrementReminderAttempt(taskId);
-            Log.d(TAG, "🔄 Attempt Count: " + currentAttempts + " / " + MAX_ATTEMPTS);
 
             if (currentAttempts < MAX_ATTEMPTS) {
-                // --- 1. SCHEDULE NEXT ALARM ---
+                // Schedule next alarm
                 NotificationSettings settings = dbHelper.getNotificationSettings();
                 int intervalMinutes = settings.getUnfinishedNotificationInterval();
                 if (intervalMinutes <= 0) intervalMinutes = 30; // Default safety
 
-                // Use Real Time (Minutes)
-                long intervalMs = intervalMinutes * 60 * 1000L;
+                long intervalMs = intervalMinutes * 60 * 1000L; // Real Time (Minutes)
+                // long intervalMs = 15 * 1000L; // Uncomment for 15-second testing
 
                 long nextAlarmTime = System.currentTimeMillis() + intervalMs;
                 String nextTitle = currentTask.getTitle() + " (Reminder " + (currentAttempts + 1) + ")";
 
                 reminderManager.scheduleNextReminder(taskId, nextTitle, description, nextAlarmTime);
-                Log.d(TAG, "📅 Next alarm scheduled for: " + new Date(nextAlarmTime).toString());
 
             } else {
-                // --- 2. MAX ATTEMPTS REACHED ---
-                Log.d(TAG, "🛑 Max attempts reached. Marking task as UNFINISHED.");
-
-                // A. Mark Task as Unfinished in Tasks Table
+                // Max Attempts Reached -> Mark as Unfinished
                 currentTask.setStatus("unfinished");
                 dbHelper.updateTask(currentTask);
 
-                // B. Mark Reminder State as Max Reached
+                // Notify UI to refresh
+                context.sendBroadcast(new Intent("com.rakib.to_do_app.UPDATE_UI"));
+
+                // Update Reminder State
                 dbHelper.updateReminderStatus(taskId, "max_reached");
 
-                // C. Send a final notification
-                showNotification(context, "Task Missed: " + title, "Task marked as unfinished (Max attempts reached).", taskId);
+                // Final Notification
+                showNotification(context, "Task Missed: " + title, "Task marked as unfinished.", taskId);
 
-                // D. Stop future alarms
+                // Stop future alarms
                 reminderManager.cancelReminder(currentTask);
             }
         }
@@ -92,20 +79,25 @@ public class ReminderReceiver extends BroadcastReceiver {
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager == null) return;
 
-        createNotificationChannel(notificationManager);
+        // 1. Get Sound Settings
+        NotificationSettings settings = new DatabaseHelper(context).getNotificationSettings();
+        String soundName = settings.getNotificationSound();
+        Uri soundUri = NotificationHelper.getSoundUri(context, soundName);
+
+        // 2. Generate Dynamic Channel ID (Crucial for unique sounds)
+        String cleanSoundName = (soundName == null) ? "default" : soundName.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+        String dynamicChannelId = "channel_sound_" + cleanSoundName;
+
+        // 3. Create Channel
+        createNotificationChannel(notificationManager, dynamicChannelId, soundUri);
 
         Intent appIntent = new Intent(context, MainActivity.class);
         appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
-        // Pass the Task ID so clicking opens the specific task or app
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, (int) taskId, appIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        NotificationSettings settings = new DatabaseHelper(context).getNotificationSettings();
-        android.net.Uri soundUri = NotificationHelper.getSoundUri(context, settings.getNotificationSound());
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, dynamicChannelId)
                 .setSmallIcon(R.drawable.outline_add_alert_24)
                 .setContentTitle(title)
                 .setContentText(description)
@@ -123,12 +115,29 @@ public class ReminderReceiver extends BroadcastReceiver {
         notificationManager.notify((int) taskId, builder.build());
     }
 
-    private void createNotificationChannel(NotificationManager notificationManager) {
+    private void createNotificationChannel(NotificationManager notificationManager, String channelId, Uri soundUri) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Check if this SPECIFIC channel exists (reuse if yes)
+            if (notificationManager.getNotificationChannel(channelId) != null) {
+                return;
+            }
+
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "Task Reminders", NotificationManager.IMPORTANCE_HIGH
+                    channelId,
+                    "Task Reminders", // Display name in settings
+                    NotificationManager.IMPORTANCE_HIGH
             );
             channel.enableVibration(true);
+            channel.setDescription("Notifications for task reminders");
+
+            if (soundUri != null) {
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .build();
+                channel.setSound(soundUri, audioAttributes);
+            }
+
             notificationManager.createNotificationChannel(channel);
         }
     }

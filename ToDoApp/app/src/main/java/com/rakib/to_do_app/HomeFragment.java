@@ -1,5 +1,10 @@
 package com.rakib.to_do_app;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,7 +34,7 @@ public class HomeFragment extends Fragment {
     private MaterialButtonToggleGroup toggleGroupStatus;
     private RecyclerView recyclerTasks;
     private TextView txtEmptyState;
-    private LinearLayout layoutEmptyState; // New container for empty state
+    private LinearLayout layoutEmptyState;
     private TextView tvUserNameGreeting;
     private SearchView searchTaskCategory;
     private ImageButton btnSort;
@@ -39,11 +44,22 @@ public class HomeFragment extends Fragment {
     private List<Task> allTasks = new ArrayList<>();
     private TaskManager taskManager;
     private DatabaseHelper dbHelper;
+    private SessionManager sessionManager; // Added SessionManager
 
     // State
     private String currentTab = "all";
     private String currentSearchQuery = "";
     private String currentSortBy = "date";
+
+    // --- 1. Broadcast Receiver for Background Updates ---
+    private final BroadcastReceiver updateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if ("com.rakib.to_do_app.UPDATE_UI".equals(intent.getAction())) {
+                loadTasks(); // Auto-refresh when ReminderReceiver changes status
+            }
+        }
+    };
 
     public HomeFragment() {
         // Required empty public constructor
@@ -56,11 +72,12 @@ public class HomeFragment extends Fragment {
 
         taskManager = TaskManager.getInstance(requireContext());
         dbHelper = new DatabaseHelper(requireContext());
+        sessionManager = new SessionManager(requireContext()); // Initialize
 
         initializeViews(view);
         loadUserName();
         setupTaskAdapter();
-        setupTabListener(); // New consolidated listener
+        setupTabListener();
         setupSearchAndSort();
 
         loadTasks();
@@ -68,11 +85,33 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
+    // --- 2. Register/Unregister Receiver ---
+    @Override
+    public void onStart() {
+        super.onStart();
+        IntentFilter filter = new IntentFilter("com.rakib.to_do_app.UPDATE_UI");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            requireActivity().registerReceiver(updateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            requireActivity().registerReceiver(updateReceiver, filter);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        try {
+            requireActivity().unregisterReceiver(updateReceiver);
+        } catch (Exception e) {
+            // Receiver might not be registered
+        }
+    }
+
     private void initializeViews(View view) {
         toggleGroupStatus = view.findViewById(R.id.toggleGroupStatus);
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
         txtEmptyState = view.findViewById(R.id.txtEmptyState);
-        layoutEmptyState = view.findViewById(R.id.layoutEmptyState); // Make sure to add ID in XML
+        layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
 
         searchTaskCategory = view.findViewById(R.id.searchTaskCategory);
         btnSort = view.findViewById(R.id.btnSort);
@@ -80,22 +119,25 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadUserName() {
-        // Use session manager preferably, or fallback to DB
-        SessionManager session = new SessionManager(requireContext());
-        String name = session.getUserName();
-        if (name.equals("User")) { // Fallback if session empty
-            UserProfile profile = dbHelper.getUserProfile();
-            if (profile != null) name = profile.getName();
+        // 3. Fix: Use correct method to get user details
+        String name = sessionManager.getUserName();
+        String email = sessionManager.getUserEmail();
+
+        if (name.equals("User") || name.isEmpty()) {
+            // Use getUserDetails(email) instead of generic getUserProfile()
+            UserProfile profile = dbHelper.getUserDetails(email);
+            if (profile != null && profile.getName() != null) {
+                name = profile.getName();
+            }
         }
 
         if (name != null && !name.isEmpty()) {
             String firstName = name.split(" ")[0];
-            tvUserNameGreeting.setText(firstName + "!");
+            tvUserNameGreeting.setText("Hi, " + firstName + "!");
         }
     }
 
     private void setupTaskAdapter() {
-        // ... (Keep your existing adapter setup code exactly as is) ...
         taskAdapter = new TaskAdapter(new ArrayList<>(), new TaskAdapter.OnTaskActionListener() {
             @Override
             public void onTaskEdit(int position) {
@@ -110,8 +152,8 @@ public class HomeFragment extends Fragment {
                     ReminderManager reminderManager = new ReminderManager(requireContext());
                     reminderManager.cancelReminder(task);
                     taskManager.removeTask(task);
-                    allTasks.remove(task);
-                    filterAndSortTasks();
+                    // No need to manually remove from allTasks, loadTasks() will refresh everything
+                    loadTasks();
                     Toast.makeText(getContext(), "Task deleted", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -122,7 +164,7 @@ public class HomeFragment extends Fragment {
                 if (task != null) {
                     task.setStatus(newStatus);
                     taskManager.updateTask(task);
-                    filterAndSortTasks();
+                    loadTasks(); // Refresh to update list order/filtering
                     String statusText = newStatus.equals("running") ? "In Progress" : "Completed";
                     Toast.makeText(getContext(), "Task marked as " + statusText, Toast.LENGTH_SHORT).show();
                 }
@@ -133,7 +175,6 @@ public class HomeFragment extends Fragment {
         recyclerTasks.setAdapter(taskAdapter);
     }
 
-    // --- REPLACED: setupClickListeners with setupTabListener ---
     private void setupTabListener() {
         toggleGroupStatus.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (isChecked) {
@@ -143,6 +184,9 @@ public class HomeFragment extends Fragment {
                     currentTab = "running";
                 } else if (checkedId == R.id.btnCompleted) {
                     currentTab = "completed";
+                } else if (checkedId == R.id.btnMissed) {
+                    // Handle the new button
+                    currentTab = "unfinished";
                 }
                 filterAndSortTasks();
             }
@@ -173,7 +217,6 @@ public class HomeFragment extends Fragment {
         PopupMenu popup = new PopupMenu(requireContext(), v);
         popup.getMenu().add(0, 1, 0, "Sort by Date");
         popup.getMenu().add(0, 2, 0, "Sort by Priority");
-        // popup.getMenu().add(0, 3, 0, "Sort by Category"); // Optional
 
         popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();
@@ -192,6 +235,10 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadTasks() {
+        // 4. Fix: FORCE REFRESH from Database
+        // This ensures changes from background services (ReminderReceiver) are seen
+        taskManager.refreshTasks();
+
         allTasks = taskManager.getAllTasks();
         filterAndSortTasks();
     }
@@ -235,7 +282,7 @@ public class HomeFragment extends Fragment {
     private void updateEmptyState(boolean isEmpty, String status, String query) {
         if (isEmpty) {
             recyclerTasks.setVisibility(View.GONE);
-            layoutEmptyState.setVisibility(View.VISIBLE); // Show layout container
+            if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.VISIBLE);
 
             if (!query.isEmpty()) {
                 txtEmptyState.setText("No categories match \"" + query + "\"");
@@ -244,18 +291,18 @@ public class HomeFragment extends Fragment {
                     case "all": txtEmptyState.setText("No tasks yet"); break;
                     case "running": txtEmptyState.setText("No tasks in progress"); break;
                     case "completed": txtEmptyState.setText("No completed tasks"); break;
+                    case "unfinished": txtEmptyState.setText("Great job! No missed tasks."); break; // New Message
                 }
             }
         } else {
             recyclerTasks.setVisibility(View.VISIBLE);
-            layoutEmptyState.setVisibility(View.GONE);
+            if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
         }
     }
 
     private void openEditTaskDialog(Task task) {
         AddTaskDialog dialog = new AddTaskDialog();
         Bundle args = new Bundle();
-        // ... (Keep existing argument passing logic) ...
         args.putLong("task_id", task.getId());
         args.putString("title", task.getTitle());
         args.putString("description", task.getDescription());

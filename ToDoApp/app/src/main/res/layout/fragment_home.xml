@@ -92,6 +92,7 @@
                 android:layout_marginBottom="16dp"
                 app:singleSelection="true"
                 app:selectionRequired="true"
+
                 app:checkedButton="@id/btnMyTasks">
 
                 <com.google.android.material.button.MaterialButton
@@ -101,7 +102,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="All"
-                    android:textSize="12sp"
+                    android:fontFamily="serif-monospace"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
                     app:backgroundTint="@color/selector_toggle_bg"
                     android:textColor="@color/selector_toggle_text"
                     app:strokeColor="?attr/colorPrimary"
@@ -113,8 +118,29 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Running"
-                    android:textSize="12sp"
+                    android:text="Run"
+                    android:fontFamily="serif-monospace"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:backgroundTint="@color/selector_toggle_bg"
+                    android:textColor="@color/selector_toggle_text"
+                    app:strokeColor="?attr/colorPrimary"
+                    app:strokeWidth="1dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMissed"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Missed"
+                    android:fontFamily="serif-monospace"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
                     app:backgroundTint="@color/selector_toggle_bg"
                     android:textColor="@color/selector_toggle_text"
                     app:strokeColor="?attr/colorPrimary"
@@ -127,14 +153,17 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Done"
-                    android:textSize="12sp"
+                    android:fontFamily="serif-monospace"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
                     app:backgroundTint="@color/selector_toggle_bg"
                     android:textColor="@color/selector_toggle_text"
                     app:strokeColor="?attr/colorPrimary"
                     app:strokeWidth="1dp"/>
 
             </com.google.android.material.button.MaterialButtonToggleGroup>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

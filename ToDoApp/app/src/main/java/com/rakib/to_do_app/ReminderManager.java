@@ -65,8 +65,8 @@ public class ReminderManager {
 
         // --- PRODUCTION MODE: Set to 7:00 AM ---
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 7);
-        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.HOUR_OF_DAY, 00);
+        calendar.set(Calendar.MINUTE, 20);
         calendar.set(Calendar.SECOND, 0);
 
         // If 7 AM already passed today, set for tomorrow
