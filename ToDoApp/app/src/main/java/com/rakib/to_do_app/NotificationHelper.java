@@ -16,6 +16,9 @@ public class NotificationHelper {
     private static final String CHANNEL_ID = "todo_app_channel";
     private static final String CHANNEL_NAME = "ToDo App Notifications";
 
+    // Static variable to stop previous sound before playing new one
+    private static Ringtone currentRingtone;
+
     public static void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -38,12 +41,22 @@ public class NotificationHelper {
     }
 
     public static Uri getSoundUri(Context context, String soundNameOrUri) {
-        if (soundNameOrUri == null) return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        if (soundNameOrUri.contains("://")) {
-            return Uri.parse(soundNameOrUri);
+        // 1. Handle Null: Return Default
+        if (soundNameOrUri == null || soundNameOrUri.isEmpty()) {
+            return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         }
 
+        // 2. Handle Direct URIs (content:// or file://)
+        // This is useful if you are passing the raw URI directly
+        if (soundNameOrUri.contains("://")) {
+            try {
+                return Uri.parse(soundNameOrUri);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to parse direct URI: " + soundNameOrUri);
+            }
+        }
+
+        // 3. Handle Preset Hardcoded Names
         switch (soundNameOrUri) {
             case "Urgent":
             case "Alert":
@@ -59,38 +72,47 @@ public class NotificationHelper {
                 return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         }
 
+        // 4. Handle Custom Sounds (Database Lookup)
         try {
             DatabaseHelper dbHelper = new DatabaseHelper(context);
-            NotificationSettings settings = dbHelper.getNotificationSettings();
-            String storedName = settings.getNotificationSound();
-            String storedUri = settings.getCustomRingtoneUri();
 
-            if ("Custom".equals(soundNameOrUri) || (storedName != null && storedName.equals(soundNameOrUri))) {
-                if (storedUri != null && !storedUri.isEmpty()) {
-                    return Uri.parse(storedUri);
-                }
+            // Query the specific table for this specific name
+            String customUriString = dbHelper.getCustomSoundUri(soundNameOrUri);
+
+            if (customUriString != null && !customUriString.isEmpty()) {
+                return Uri.parse(customUriString);
             }
+
         } catch (Exception e) {
-            Log.e(TAG, "Error retrieving custom sound from DB: " + e.getMessage());
+            Log.e(TAG, "Error looking up custom sound in DB: " + e.getMessage());
         }
 
+        // 5. Fallback if name not found in DB
         return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     }
 
     public static void playTestSound(Context context, String soundName) {
         try {
-            Uri soundUri = getSoundUri(context, soundName);
-
-            if (soundUri == null) {
-                return;
+            // Stop previously playing sound to prevent overlap
+            if (currentRingtone != null) {
+                if (currentRingtone.isPlaying()) {
+                    currentRingtone.stop();
+                }
+                currentRingtone = null;
             }
 
-            Ringtone ringtone = RingtoneManager.getRingtone(context, soundUri);
-            if (ringtone != null) {
+            Uri soundUri = getSoundUri(context, soundName);
+
+            // If "Silent" or null, just return
+            if (soundUri == null) return;
+
+            currentRingtone = RingtoneManager.getRingtone(context, soundUri);
+
+            if (currentRingtone != null) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    ringtone.setLooping(false);
+                    currentRingtone.setLooping(false);
                 }
-                ringtone.play();
+                currentRingtone.play();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error playing test sound", e);
@@ -100,7 +122,6 @@ public class NotificationHelper {
     public static void sendNotification(Context context, String title, String message, String soundPreference) {
         try {
             Uri soundUri = getSoundUri(context, soundPreference);
-
             NotificationManager notificationManager =
                     (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -117,6 +138,7 @@ public class NotificationHelper {
                 builder.setSound(soundUri);
             }
 
+            // Logic for vibration
             if ("Vibrate only".equals(soundPreference) || (soundUri != null && !"Silent".equals(soundPreference))) {
                 builder.setVibrate(new long[]{0, 500, 200, 500});
             }

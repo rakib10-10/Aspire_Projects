@@ -10,10 +10,13 @@ public class TaskManager {
     private static final String TAG = "TaskManager";
     private static TaskManager instance;
     private final DatabaseHelper dbHelper;
+    private final SessionManager sessionManager; // 1. Add SessionManager
     private List<Task> tasks;
 
     private TaskManager(Context context) {
-        this.dbHelper = new DatabaseHelper(context.getApplicationContext());
+        Context appContext = context.getApplicationContext();
+        this.dbHelper = new DatabaseHelper(appContext);
+        this.sessionManager = new SessionManager(appContext); // 2. Initialize it
         this.tasks = new ArrayList<>();
         loadTasksFromDatabase();
     }
@@ -51,14 +54,17 @@ public class TaskManager {
         return null;
     }
 
-
     public long addTask(Task task) {
         if (dbHelper == null) {
             Log.e(TAG, "DatabaseHelper is null - cannot add task");
             return -1;
         }
 
-        long id = dbHelper.addTask(task);
+        // 3. Get Current User Email
+        String userEmail = sessionManager.getUserEmail();
+
+        // 4. Pass email to DatabaseHelper
+        long id = dbHelper.addTask(task, userEmail);
 
         if (id != -1) {
             task.setId(id);
@@ -99,7 +105,13 @@ public class TaskManager {
 
         if (dbHelper != null) {
             tasks.clear();
-            List<Task> databaseTasks = dbHelper.getAllTasks();
+
+            // 5. Get Current User Email
+            String userEmail = sessionManager.getUserEmail();
+
+            // 6. Fetch tasks ONLY for this user
+            List<Task> databaseTasks = dbHelper.getAllTasks(userEmail);
+
             if (databaseTasks != null) {
                 tasks.addAll(databaseTasks);
             }
