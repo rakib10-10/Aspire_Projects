@@ -6,9 +6,7 @@ import android.text.Spannable;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.graphics.Typeface;
-import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +20,7 @@ public class AddNoteActivity extends AppCompatActivity {
     private TextView textDateTime;
     private Note alreadyAvailableNote;
     private DatabaseHelper dbHelper;
+    private SessionManager sessionManager; // 1. Add SessionManager
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +28,7 @@ public class AddNoteActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_note);
 
         dbHelper = new DatabaseHelper(this);
+        sessionManager = new SessionManager(this); // 2. Initialize SessionManager
 
         inputNoteTitle = findViewById(R.id.inputNoteTitle);
         inputNoteContent = findViewById(R.id.inputNoteContent);
@@ -54,8 +54,11 @@ public class AddNoteActivity extends AppCompatActivity {
     }
 
     private void loadNote(long id) {
-        // Simple linear search for now, better to add getNote(id) in DB
-        for(Note n : dbHelper.getAllNotes()) {
+        // 3. Get Current User Email
+        String userEmail = sessionManager.getUserEmail();
+
+        // 4. Pass email to getAllNotes
+        for(Note n : dbHelper.getAllNotes(userEmail)) {
             if(n.getId() == id) {
                 alreadyAvailableNote = n;
                 inputNoteTitle.setText(n.getTitle());
@@ -91,6 +94,7 @@ public class AddNoteActivity extends AppCompatActivity {
 
     private void saveNote() {
         String title = inputNoteTitle.getText().toString().trim();
+
         // Convert Spanned text (with formatting) to HTML string for storage
         String content;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
@@ -109,14 +113,18 @@ public class AddNoteActivity extends AppCompatActivity {
         note.setTitle(title);
         note.setContent(content);
         note.setDateTime(dateTime);
-        note.setColor("#333333"); // Default color, can be enhanced later
+        note.setColor("#333333");
+
+        // 5. Get User Email
+        String userEmail = sessionManager.getUserEmail();
 
         if (alreadyAvailableNote != null) {
             note.setId(alreadyAvailableNote.getId());
-            dbHelper.updateNote(note);
+            dbHelper.updateNote(note); // Update logic remains the same (ID is unique)
             Toast.makeText(this, "Note Updated", Toast.LENGTH_SHORT).show();
         } else {
-            dbHelper.addNote(note);
+            // 6. Pass Email to addNote
+            dbHelper.addNote(note, userEmail);
             Toast.makeText(this, "Note Saved", Toast.LENGTH_SHORT).show();
         }
         finish();

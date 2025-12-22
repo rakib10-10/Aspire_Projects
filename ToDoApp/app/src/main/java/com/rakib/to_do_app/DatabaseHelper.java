@@ -10,7 +10,7 @@ import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "TodoApp.db";
-    private static final int DATABASE_VERSION = 12; // Version incremented
+    private static final int DATABASE_VERSION = 14; // INCREMENTED FOR NOTES UPDATE
 
     // --- TABLE NAMES ---
     private static final String TABLE_TASKS = "tasks";
@@ -36,9 +36,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_TASK_STATUS = "status";
     private static final String KEY_TASK_PRIORITY = "priority";
     private static final String KEY_TASK_COLOR_TAG = "color_tag";
-
-    // *** NEW COLUMN FOR USER ID ***
-    private static final String KEY_TASK_USER_EMAIL = "user_email";
+    private static final String KEY_TASK_USER_EMAIL = "user_email"; // User Filter
 
     // --- PROFILE COLUMNS ---
     private static final String KEY_PROFILE_NAME = "name";
@@ -73,6 +71,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_NOTE_CONTENT = "content";
     private static final String KEY_NOTE_DATE = "date";
     private static final String KEY_NOTE_COLOR = "color";
+    private static final String KEY_NOTE_USER_EMAIL = "user_email"; // NEW COLUMN
 
     // --- AUTH COLUMNS ---
     private static final String KEY_AUTH_ID = "id";
@@ -99,10 +98,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_TASK_STATUS + " TEXT DEFAULT 'running',"
             + KEY_TASK_PRIORITY + " TEXT DEFAULT 'Medium',"
             + KEY_TASK_COLOR_TAG + " TEXT DEFAULT '#2196F3',"
-            + KEY_TASK_USER_EMAIL + " TEXT," // ADDED COLUMN HERE
+            + KEY_TASK_USER_EMAIL + " TEXT," // ADDED
             + KEY_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP" + ")";
 
-    // ... (Keep other Create Statements identical to your original code) ...
     private static final String CREATE_TABLE_USER_PROFILE = "CREATE TABLE " + TABLE_USER_PROFILE + "("
             + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_PROFILE_NAME + " TEXT,"
@@ -144,6 +142,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             + KEY_NOTE_CONTENT + " TEXT,"
             + KEY_NOTE_DATE + " TEXT,"
             + KEY_NOTE_COLOR + " TEXT,"
+            + KEY_NOTE_USER_EMAIL + " TEXT," // ADDED
             + KEY_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP" + ")";
 
     private static final String CREATE_TABLE_AUTH = "CREATE TABLE " + TABLE_AUTH + "("
@@ -162,6 +161,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+    public void updateReminderStatus(long taskId, String status) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_STATE_STATUS, status);
+
+        // Update the row for this specific task
+        db.update(TABLE_REMINDER_STATE, values, KEY_STATE_TASK_ID + " = ?", new String[]{String.valueOf(taskId)});
+        db.close();
     }
 
     @Override
@@ -183,18 +191,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             try { db.execSQL(CREATE_TABLE_CUSTOM_SOUNDS); } catch (Exception e) {}
         }
         if (oldVersion < 12) {
-            // Version 12: Add user_email column to existing tasks table
+            try { db.execSQL("ALTER TABLE " + TABLE_TASKS + " ADD COLUMN " + KEY_TASK_USER_EMAIL + " TEXT"); } catch (Exception e) {}
+        }
+        if (oldVersion < 13) {
+            try { db.execSQL("ALTER TABLE " + TABLE_NOTES + " ADD COLUMN " + KEY_NOTE_USER_EMAIL + " TEXT"); } catch (Exception e) {}
+        }
+        if (oldVersion < 14) {
+
             try {
-                db.execSQL("ALTER TABLE " + TABLE_TASKS + " ADD COLUMN " + KEY_TASK_USER_EMAIL + " TEXT");
+                db.execSQL(CREATE_TABLE_AUTH);
             } catch (Exception e) {
-                // Column might already exist
+
             }
         }
     }
 
-    // ==================== TASKS (UPDATED FOR USER ID) ====================
-
-    // 1. UPDATED: Now accepts userEmail to associate the task with a user
+    // ==================== TASKS (UPDATED) ====================
     public long addTask(Task task, String userEmail) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -207,29 +219,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(KEY_TASK_STATUS, task.getStatus());
         values.put(KEY_TASK_PRIORITY, task.getPriority());
         values.put(KEY_TASK_COLOR_TAG, task.getColorTag());
-
-        // Save user email
-        values.put(KEY_TASK_USER_EMAIL, userEmail);
+        values.put(KEY_TASK_USER_EMAIL, userEmail); // SAVING EMAIL
 
         long id = db.insert(TABLE_TASKS, null, values);
         db.close();
         return id;
     }
 
-    // 2. UPDATED: Now requires userEmail to filter tasks
     public List<Task> getAllTasks(String userEmail) {
         List<Task> tasks = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
-        // Filter: Select all tasks WHERE user_email = current user's email
         String selection = KEY_TASK_USER_EMAIL + " = ?";
         String[] selectionArgs = { userEmail };
-
-        // If userEmail is null (e.g. not logged in), you might want to show empty list or local tasks
-        if (userEmail == null) {
-            selection = KEY_TASK_USER_EMAIL + " IS NULL"; // Or handle as per your Guest logic
-            selectionArgs = null;
-        }
+        if (userEmail == null) { selection = KEY_TASK_USER_EMAIL + " IS NULL"; selectionArgs = null; }
 
         Cursor cursor = db.query(TABLE_TASKS, null, selection, selectionArgs, null, null, KEY_CREATED_AT + " DESC");
 
@@ -254,7 +257,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return tasks;
     }
 
-    // ... (Keep existing updateTask, deleteTask, and getTask methods - they use ID so they are fine) ...
     public int updateTask(Task task) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -300,7 +302,64 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return task;
     }
 
-    // ==================== OTHER METHODS (Keep exactly as they were) ====================
+    // ==================== NOTES (UPDATED) ====================
+    public long addNote(Note note, String userEmail) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_NOTE_TITLE, note.getTitle());
+        values.put(KEY_NOTE_CONTENT, note.getContent());
+        values.put(KEY_NOTE_DATE, note.getDateTime());
+        values.put(KEY_NOTE_COLOR, note.getColor());
+        values.put(KEY_NOTE_USER_EMAIL, userEmail); // SAVING EMAIL
+
+        long id = db.insert(TABLE_NOTES, null, values);
+        db.close();
+        return id;
+    }
+
+    public List<Note> getAllNotes(String userEmail) {
+        List<Note> notes = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        String selection = KEY_NOTE_USER_EMAIL + " = ?";
+        String[] selectionArgs = { userEmail };
+        if (userEmail == null) { selection = KEY_NOTE_USER_EMAIL + " IS NULL"; selectionArgs = null; }
+
+        Cursor cursor = db.query(TABLE_NOTES, null, selection, selectionArgs, null, null, KEY_ID + " DESC");
+        if (cursor.moveToFirst()) {
+            do {
+                Note note = new Note();
+                note.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)));
+                note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_TITLE)));
+                note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_CONTENT)));
+                note.setDateTime(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_DATE)));
+                note.setColor(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_COLOR)));
+                notes.add(note);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return notes;
+    }
+
+    public void updateNote(Note note) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_NOTE_TITLE, note.getTitle());
+        values.put(KEY_NOTE_CONTENT, note.getContent());
+        values.put(KEY_NOTE_DATE, note.getDateTime());
+        values.put(KEY_NOTE_COLOR, note.getColor());
+        db.update(TABLE_NOTES, values, KEY_ID + " = ?", new String[]{String.valueOf(note.getId())});
+        db.close();
+    }
+
+    public void deleteNote(long id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(TABLE_NOTES, KEY_ID + " = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    // ==================== AUTH & OTHER METHODS ====================
     public void addCustomSound(String name, String uri) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -485,51 +544,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void deleteReminderState(long taskId) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_REMINDER_STATE, KEY_STATE_TASK_ID + " = ?", new String[]{String.valueOf(taskId)});
-        db.close();
-    }
-    public long addNote(Note note) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(KEY_NOTE_TITLE, note.getTitle());
-        values.put(KEY_NOTE_CONTENT, note.getContent());
-        values.put(KEY_NOTE_DATE, note.getDateTime());
-        values.put(KEY_NOTE_COLOR, note.getColor());
-        long id = db.insert(TABLE_NOTES, null, values);
-        db.close();
-        return id;
-    }
-    public List<Note> getAllNotes() {
-        List<Note> notes = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NOTES, null, null, null, null, null, KEY_ID + " DESC");
-        if (cursor.moveToFirst()) {
-            do {
-                Note note = new Note();
-                note.setId(cursor.getLong(cursor.getColumnIndexOrThrow(KEY_ID)));
-                note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_TITLE)));
-                note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_CONTENT)));
-                note.setDateTime(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_DATE)));
-                note.setColor(cursor.getString(cursor.getColumnIndexOrThrow(KEY_NOTE_COLOR)));
-                notes.add(note);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        db.close();
-        return notes;
-    }
-    public void updateNote(Note note) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put(KEY_NOTE_TITLE, note.getTitle());
-        values.put(KEY_NOTE_CONTENT, note.getContent());
-        values.put(KEY_NOTE_DATE, note.getDateTime());
-        values.put(KEY_NOTE_COLOR, note.getColor());
-        db.update(TABLE_NOTES, values, KEY_ID + " = ?", new String[]{String.valueOf(note.getId())});
-        db.close();
-    }
-    public void deleteNote(long id) {
-        SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_NOTES, KEY_ID + " = ?", new String[]{String.valueOf(id)});
         db.close();
     }
     public boolean registerUser(String name, String email, String password, String phone, String bio) {

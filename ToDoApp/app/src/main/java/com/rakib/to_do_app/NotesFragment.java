@@ -1,10 +1,12 @@
 package com.rakib.to_do_app;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -19,6 +21,7 @@ public class NotesFragment extends Fragment implements NotesAdapter.OnNoteListen
     private NotesAdapter notesAdapter;
     private DatabaseHelper dbHelper;
     private List<Note> noteList;
+    private SessionManager sessionManager; // 1. Add SessionManager
 
     @Nullable
     @Override
@@ -26,6 +29,8 @@ public class NotesFragment extends Fragment implements NotesAdapter.OnNoteListen
         View view = inflater.inflate(R.layout.fragment_notes, container, false);
 
         dbHelper = new DatabaseHelper(requireContext());
+        sessionManager = new SessionManager(requireContext()); // 2. Initialize Session
+
         notesRecyclerView = view.findViewById(R.id.notesRecyclerView);
         FloatingActionButton fabAddNote = view.findViewById(R.id.fabAddNote);
 
@@ -43,8 +48,14 @@ public class NotesFragment extends Fragment implements NotesAdapter.OnNoteListen
     }
 
     private void loadNotes() {
-        noteList = dbHelper.getAllNotes();
-        notesAdapter = new NotesAdapter(noteList, this);
+        // 3. Get User Email
+        String userEmail = sessionManager.getUserEmail();
+
+        // 4. Load notes specific to this user
+        noteList = dbHelper.getAllNotes(userEmail);
+
+        // 5. Pass 'requireContext()' to the adapter (Fixed constructor)
+        notesAdapter = new NotesAdapter(noteList, requireContext(), this);
         notesRecyclerView.setAdapter(notesAdapter);
     }
 
@@ -54,10 +65,24 @@ public class NotesFragment extends Fragment implements NotesAdapter.OnNoteListen
         loadNotes(); // Refresh list when returning from Add/Edit screen
     }
 
+    // --- IMPLEMENT DELETE LOGIC ---
     @Override
-    public void onNoteClick(Note note) {
-        Intent intent = new Intent(getContext(), AddNoteActivity.class);
-        intent.putExtra("note_id", note.getId());
-        startActivity(intent);
+    public void onDeleteClick(Note note, int position) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Note")
+                .setMessage("Are you sure you want to delete this note?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    // 1. Delete from Database
+                    dbHelper.deleteNote(note.getId());
+
+                    // 2. Remove from List and Update UI
+                    noteList.remove(position);
+                    notesAdapter.notifyItemRemoved(position);
+                    notesAdapter.notifyItemRangeChanged(position, noteList.size());
+
+                    Toast.makeText(requireContext(), "Note deleted", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }

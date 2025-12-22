@@ -27,8 +27,8 @@ public class ReminderReceiver extends BroadcastReceiver {
 
         if (taskId == -1) return;
 
+        // Use DatabaseHelper directly (Safer than TaskManager in Background)
         DatabaseHelper dbHelper = new DatabaseHelper(context);
-        TaskManager taskManager = TaskManager.getInstance(context);
         ReminderManager reminderManager = new ReminderManager(context);
 
         Task currentTask = dbHelper.getTask(taskId);
@@ -38,9 +38,9 @@ public class ReminderReceiver extends BroadcastReceiver {
             return;
         }
 
-        // Check if task is already done
-        if (!currentTask.getStatus().equals("running")) {
-            Log.d(TAG, "⚠️ Task not running. Stopping.");
+        // Check if task is already done/completed
+        if (!"running".equals(currentTask.getStatus())) {
+            Log.d(TAG, "⚠️ Task not running (Status: " + currentTask.getStatus() + "). Stopping.");
             reminderManager.cancelReminder(currentTask);
             return;
         }
@@ -48,20 +48,19 @@ public class ReminderReceiver extends BroadcastReceiver {
         // Show the Notification
         showNotification(context, title, description, taskId);
 
-        // Handle Repetition
+        // Handle Repetition logic
         if (isRepeatingAlarm) {
             int currentAttempts = dbHelper.incrementReminderAttempt(taskId);
             Log.d(TAG, "🔄 Attempt Count: " + currentAttempts + " / " + MAX_ATTEMPTS);
 
             if (currentAttempts < MAX_ATTEMPTS) {
-                // --- CALCULATE NEXT TIME ---
+                // --- 1. SCHEDULE NEXT ALARM ---
                 NotificationSettings settings = dbHelper.getNotificationSettings();
                 int intervalMinutes = settings.getUnfinishedNotificationInterval();
-                if (intervalMinutes <= 0) intervalMinutes = 60; // Default safety
+                if (intervalMinutes <= 0) intervalMinutes = 30; // Default safety
 
-                // 🔴 IMPORTANT: SWITCHING BACK TO REAL TIME
-                // long intervalMs = 30 * 1000L; // (Test Mode: 30 Seconds)
-                long intervalMs = intervalMinutes * 60 * 1000L; // (Real Mode: Minutes)
+                // Use Real Time (Minutes)
+                long intervalMs = intervalMinutes * 60 * 1000L;
 
                 long nextAlarmTime = System.currentTimeMillis() + intervalMs;
                 String nextTitle = currentTask.getTitle() + " (Reminder " + (currentAttempts + 1) + ")";
@@ -70,16 +69,21 @@ public class ReminderReceiver extends BroadcastReceiver {
                 Log.d(TAG, "📅 Next alarm scheduled for: " + new Date(nextAlarmTime).toString());
 
             } else {
-                // --- MAX ATTEMPTS REACHED: MARK AS UNFINISHED ---
+                // --- 2. MAX ATTEMPTS REACHED ---
                 Log.d(TAG, "🛑 Max attempts reached. Marking task as UNFINISHED.");
 
-                currentTask.setStatus("unfinished"); // 1. Change Status Object
-                taskManager.updateTask(currentTask); // 2. Update Database
+                // A. Mark Task as Unfinished in Tasks Table
+                currentTask.setStatus("unfinished");
+                dbHelper.updateTask(currentTask);
 
-                // Optional: Show a final notification saying it's marked unfinished
-                showNotification(context, "Task Missed: " + title, "Marked as unfinished due to lack of response.", taskId);
+                // B. Mark Reminder State as Max Reached
+                dbHelper.updateReminderStatus(taskId, "max_reached");
 
-                reminderManager.cancelReminder(currentTask); // 3. Clean up
+                // C. Send a final notification
+                showNotification(context, "Task Missed: " + title, "Task marked as unfinished (Max attempts reached).", taskId);
+
+                // D. Stop future alarms
+                reminderManager.cancelReminder(currentTask);
             }
         }
     }
@@ -92,6 +96,8 @@ public class ReminderReceiver extends BroadcastReceiver {
 
         Intent appIntent = new Intent(context, MainActivity.class);
         appIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        // Pass the Task ID so clicking opens the specific task or app
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, (int) taskId, appIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
@@ -108,8 +114,11 @@ public class ReminderReceiver extends BroadcastReceiver {
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
-        if (soundUri != null) builder.setSound(soundUri);
-        else builder.setDefaults(NotificationCompat.DEFAULT_VIBRATE);
+        if (soundUri != null) {
+            builder.setSound(soundUri);
+        } else {
+            builder.setDefaults(NotificationCompat.DEFAULT_VIBRATE);
+        }
 
         notificationManager.notify((int) taskId, builder.build());
     }

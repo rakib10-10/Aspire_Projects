@@ -127,6 +127,8 @@ public class ProfileFragment extends Fragment {
     }
 
     private void logoutUser() {
+
+        TaskManager.clearInstance();
         sessionManager.logoutUser();
         if (getActivity() != null) {
             getActivity().finish();

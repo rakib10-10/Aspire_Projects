@@ -10,13 +10,13 @@ public class TaskManager {
     private static final String TAG = "TaskManager";
     private static TaskManager instance;
     private final DatabaseHelper dbHelper;
-    private final SessionManager sessionManager; // 1. Add SessionManager
+    private final SessionManager sessionManager;
     private List<Task> tasks;
 
     private TaskManager(Context context) {
         Context appContext = context.getApplicationContext();
         this.dbHelper = new DatabaseHelper(appContext);
-        this.sessionManager = new SessionManager(appContext); // 2. Initialize it
+        this.sessionManager = new SessionManager(appContext);
         this.tasks = new ArrayList<>();
         loadTasksFromDatabase();
     }
@@ -35,6 +35,11 @@ public class TaskManager {
         return instance;
     }
 
+    // Call this when logging out to ensure the next user gets a fresh list
+    public static void clearInstance() {
+        instance = null;
+    }
+
     public List<Task> getAllTasks() {
         if (tasks == null) {
             tasks = new ArrayList<>();
@@ -42,7 +47,6 @@ public class TaskManager {
         return tasks;
     }
 
-    // Method to get a task by ID from the local cache
     public Task getTaskById(long taskId) {
         if (tasks != null) {
             for (Task task : tasks) {
@@ -60,10 +64,10 @@ public class TaskManager {
             return -1;
         }
 
-        // 3. Get Current User Email
+        // Get Current User Email from Session
         String userEmail = sessionManager.getUserEmail();
 
-        // 4. Pass email to DatabaseHelper
+        // Pass email to DatabaseHelper
         long id = dbHelper.addTask(task, userEmail);
 
         if (id != -1) {
@@ -76,7 +80,14 @@ public class TaskManager {
     public void removeTask(Task task) {
         if (dbHelper != null && tasks != null) {
             dbHelper.deleteTask(task.getId());
-            tasks.removeIf(t -> t.getId() == task.getId());
+
+            // Use standard loop for compatibility with older Android versions
+            for (int i = 0; i < tasks.size(); i++) {
+                if (tasks.get(i).getId() == task.getId()) {
+                    tasks.remove(i);
+                    break;
+                }
+            }
         } else {
             Log.e(TAG, "DatabaseHelper or tasks list is null - cannot remove task");
         }
@@ -106,10 +117,10 @@ public class TaskManager {
         if (dbHelper != null) {
             tasks.clear();
 
-            // 5. Get Current User Email
+            // Get Current User Email
             String userEmail = sessionManager.getUserEmail();
 
-            // 6. Fetch tasks ONLY for this user
+            // Fetch tasks ONLY for this user
             List<Task> databaseTasks = dbHelper.getAllTasks(userEmail);
 
             if (databaseTasks != null) {

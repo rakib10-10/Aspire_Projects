@@ -6,6 +6,9 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.CountDownTimer;
@@ -88,10 +91,14 @@ public class PomodoroService extends Service {
                 timeLeftInMillis = 0;
                 isTimerRunning = false;
                 updateNotification("Session Complete!", 0);
+
+                // Play sound BEFORE stopping foreground so it's prioritized
+                playAlarm();
+
                 if (callback != null) {
                     callback.onTimerFinish();
                 }
-                playAlarm();
+
                 stopForeground(false);
             }
         }.start();
@@ -185,8 +192,29 @@ public class PomodoroService extends Service {
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
     }
 
+    // --- FIX: IMPLEMENTED ALARM SOUND ---
     private void playAlarm() {
-        // TODO: Implement alarm sound
+        try {
+            // Try to get the default ALARM sound
+            Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+
+            // If alarm sound is not set, try notification sound
+            if (notification == null) {
+                notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            }
+
+            // If even notification is null (rare), try ringtone
+            if (notification == null) {
+                notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            }
+
+            Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+            if (r != null) {
+                r.play();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing alarm sound", e);
+        }
     }
 
     @Override
