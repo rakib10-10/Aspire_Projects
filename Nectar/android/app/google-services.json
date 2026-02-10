@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "711164649106",
+    "firebase_url": "https://nectar-grocery-app-f34db-default-rtdb.firebaseio.com",
+    "project_id": "nectar-grocery-app-f34db",
+    "storage_bucket": "nectar-grocery-app-f34db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711164649106:android:665ddcd96ae1c0d7a3904b",
+        "android_client_info": {
+          "package_name": "com.rakib.nectar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "711164649106-ap7re9es8608427cfv2hbbsn1lc22h3r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rakib.nectar",
+            "certificate_hash": "fedf243874e6d243a7c5b4466e6441102271cc1a"
+          }
+        },
+        {
+          "client_id": "711164649106-d7vtcb28g2eh0b57g4mmbeaqs0gp18lj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPeiaoRm3YcKrPRWF8WyVJx6qHae3BGl8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "711164649106-d7vtcb28g2eh0b57g4mmbeaqs0gp18lj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
